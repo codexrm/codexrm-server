@@ -14,8 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityExistsException;
-import javax.persistence.EntityNotFoundException;
+import jakarta.persistence.EntityExistsException;
+import jakarta.persistence.EntityNotFoundException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;

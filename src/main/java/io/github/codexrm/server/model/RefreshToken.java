@@ -1,6 +1,6 @@
 package io.github.codexrm.server.model;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity(name = "refreshtoken")
