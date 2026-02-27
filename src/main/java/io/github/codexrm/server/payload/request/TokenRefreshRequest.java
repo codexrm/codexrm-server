@@ -1,6 +1,6 @@
 package io.github.codexrm.server.payload.request;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 public class TokenRefreshRequest {
 
