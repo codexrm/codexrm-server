@@ -61,9 +61,14 @@ public class WebSecurityConfig {
             .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/auth/**").permitAll()
-                    .requestMatchers("/api/User/**").permitAll()
-                    .requestMatchers("/api/Reference/**").permitAll()
+                    .requestMatchers(
+                            "/api/auth/**",
+                            "/api/User/**",
+                            "/api/Reference/**",
+                            "/swagger-ui/**",
+                            "/swagger-ui.html",
+                            "/v3/api-docs/**"
+                    ).permitAll()
                     .anyRequest().authenticated()
             );
 
