@@ -1,16 +1,33 @@
 package io.github.codexrm.server.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.List;
 
+@Schema(description = "User data transfer object")
 public class UserDTO {
 
+    @Schema(description = "Unique identifier of the user", example = "1")
     private Integer id;
+
+    @Schema(description = "Username of the user", example = "marynes")
     private String username;
+
+    @Schema(description = "First name of the user", example = "Marynes")
     private String name;
+
+    @Schema(description = "Last name of the user", example = "Diaz")
     private String lastName;
+
+    @Schema(description = "Email address of the user", example = "marynes@email.com")
     private String email;
+
+    @Schema(description = "Indicates whether the user account is enabled", example = "true")
     private boolean enabled;
+
+    @Schema(description = "List of roles assigned to the user", example = "[\"ROLE_USER\"]")
     private List<String> roles;
+
 
     public UserDTO() {}
 

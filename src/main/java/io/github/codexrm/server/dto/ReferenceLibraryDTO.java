@@ -1,15 +1,30 @@
 package io.github.codexrm.server.dto;
 
 import io.github.codexrm.server.enums.SortReference;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Schema(description = "Reference library synchronization payload containing new, updated, and deleted references")
 public class ReferenceLibraryDTO {
 
+    @Schema(
+            description = "List of new references to be created",
+            example = "[{ \"referenceType\": \"ArticleReferenceDTO\", \"title\": \"Deep Learning\", \"year\": \"2016\" }]")
     private List<ReferenceDTO> newReferencesList;
+
+    @Schema(
+            description = "List of references to be updated",
+            example = "[{ \"id\": 1, \"referenceType\": \"BookReferenceDTO\", \"title\": \"Clean Code\", \"year\": \"2008\" }]")
     private List<ReferenceDTO> updatedReferencesList;
+
+    @Schema(
+            description = "List of reference IDs that should be deleted",
+            example = "[1, 2, 3]")
     private List<Integer> deletedReferencesList;
+
+    @Schema( description = "Sorting configuration applied after synchronization")
     private SortReference sortReference;
 
     public ReferenceLibraryDTO() {

@@ -1,10 +1,20 @@
 package io.github.codexrm.server.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Thesis reference information")
 public class ThesisReferenceDTO extends ReferenceDTO {
 
+    @Schema(description = "Author of the thesis", example = "Maria Gonzalez")
     private String author;
+
+    @Schema(description = "University or institution where the thesis was submitted", example = "University of Havana")
     private String school;
+
+    @Schema(description = "Type of thesis", example = "PhD Thesis")
     private String type;
+
+    @Schema(description = "Location of the university or institution", example = "Havana")
     private String address;
 
     public ThesisReferenceDTO() {}

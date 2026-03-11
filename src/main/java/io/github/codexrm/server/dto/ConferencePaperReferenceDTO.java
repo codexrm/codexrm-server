@@ -1,16 +1,38 @@
 package io.github.codexrm.server.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Conference paper reference information")
 public class ConferencePaperReferenceDTO extends ReferenceDTO {
 
+    @Schema(description = "Author of the conference paper", example = "Andrew Ng")
     private String author;
+
+    @Schema(description = "Title of the book or proceedings where the paper appears", example = "Proceedings of the International Conference on Machine Learning")
     private String bookTitle;
+
+    @Schema(description = "Editor of the conference proceedings", example = "John Smith")
     private String editor;
+
+    @Schema(description = "Volume of the proceedings", example = "15")
     private String volume;
+
+    @Schema(description = "Issue number of the proceedings", example = "2")
     private String number;
+
+    @Schema(description = "Series of the conference proceedings", example = "Lecture Notes in Computer Science")
     private String series;
+
+    @Schema(description = "Page range of the paper", example = "210-225")
     private String pages;
+
+    @Schema(description = "Location where the conference took place", example = "Berlin")
     private String address;
+
+    @Schema(description = "Organization responsible for the conference", example = "IEEE")
     private String organization;
+
+    @Schema(description = "Publisher of the proceedings", example = "Springer")
     private String publisher;
 
     public ConferencePaperReferenceDTO() {}
