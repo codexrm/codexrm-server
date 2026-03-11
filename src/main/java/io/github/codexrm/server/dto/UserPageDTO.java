@@ -1,11 +1,16 @@
 package io.github.codexrm.server.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.List;
 
+@Schema(description = "Paginated response containing a list of users")
 public class UserPageDTO {
 
+    @Schema(description = "List of users returned for the current page")
     private List<UserDTO> userDTOList;
+
+    @Schema(description = "Pagination metadata associated with the user list")
     private PageDTO pageDTO;
 
     public UserPageDTO() {

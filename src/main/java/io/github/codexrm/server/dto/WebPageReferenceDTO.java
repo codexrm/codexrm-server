@@ -1,8 +1,14 @@
 package io.github.codexrm.server.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Web page reference information")
 public class WebPageReferenceDTO extends ReferenceDTO {
 
+    @Schema(description = "Author of the web page content", example = "John Doe")
     private String author;
+
+    @Schema(description = "URL of the web page", example = "https://example.com/article")
     private String url;
 
     public WebPageReferenceDTO() {}

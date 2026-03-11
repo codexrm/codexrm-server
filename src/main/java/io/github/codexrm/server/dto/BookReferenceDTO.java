@@ -1,15 +1,35 @@
 package io.github.codexrm.server.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Book reference information")
 public class BookReferenceDTO extends ReferenceDTO {
 
+    @Schema(description = "Author of the book", example = "Robert C. Martin")
     protected String author;
+
+    @Schema(description = "Editor of the book", example = "John Smith")
     protected String editor;
+
+    @Schema(description = "Publisher of the book", example = "Prentice Hall")
     protected String publisher;
+
+    @Schema(description = "Volume of the book", example = "1")
     protected String volume;
+
+    @Schema(description = "Series to which the book belongs", example = "Computer Science Series")
     protected String series;
+
+    @Schema(description = "Book number within the series", example = "12")
     protected String number;
+
+    @Schema(description = "Publication address or location", example = "Boston")
     protected String address;
+
+    @Schema(description = "Edition of the book", example = "2nd")
     protected String edition;
+
+    @Schema(description = "ISBN identifier of the book", example = "978-0132350884")
     protected String isbn;
 
     public BookReferenceDTO() {}

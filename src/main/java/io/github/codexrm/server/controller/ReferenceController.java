@@ -12,6 +12,8 @@ import io.github.codexrm.server.security.services.UserDetailsImpl;
 import io.github.codexrm.server.service.ReferenceService;
 import io.github.codexrm.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jbibtex.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
@@ -39,6 +41,7 @@ import java.util.Objects;
 @RequestMapping("/api/Reference")
 @RestController
 @CrossOrigin(origins = "*", maxAge = 3600)
+@Tag(name = "References", description = "Operations related to user references")
 public class ReferenceController {
 
     private static final String UPLOADED_FOLDER = "tempUpload";
@@ -53,13 +56,25 @@ public class ReferenceController {
         this.dtoConverter = dtoConverter;
     }
 
+    @Operation(summary = "Get paginated references of the authenticated user with optional filters")
     @PostMapping("/GetAll")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferencePageDTO> getAll(
+
+            @Parameter(description = "Filter references by publication year", example = "2024")
             @RequestParam(required = false) String year,
+
+            @Parameter(description = "Filter references by title", example = "Machine Learning")
             @RequestParam(required = false) String title,
+
+            @Parameter(description = "Page number", example = "0")
             @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "Page size", example = "10")
             @RequestParam(defaultValue = "10") int size,
+
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Sorting configuration for references")
             @RequestBody(required = false) SortReference sort) {
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -76,9 +91,13 @@ public class ReferenceController {
         }
     }
 
+    @Operation(summary = "Get a reference by ID")
     @GetMapping("/Get/{id}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ReferenceDTO> getById(@PathVariable final Integer id) {
+    public ResponseEntity<ReferenceDTO> getById(
+            @Parameter(description = "Reference ID", example = "1")
+            @PathVariable final Integer id) {
+
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Reference reference = referenceService.get(id);
 
@@ -89,9 +108,15 @@ public class ReferenceController {
         } else return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
     }
 
+    @Operation(summary = "Create a new reference")
     @PostMapping("/Add")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ReferenceDTO> add(@RequestBody final ReferenceDTO referenceDTO) {
+    public ResponseEntity<ReferenceDTO> add(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Reference information to create",
+                    required = true)
+            @RequestBody final ReferenceDTO referenceDTO) {
+
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Reference reference = dtoConverter.createReference(referenceDTO, userService.get(userDetails.getId()));
 
@@ -102,9 +127,15 @@ public class ReferenceController {
         } else return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
     }
 
+    @Operation(summary = "Update an existing reference")
     @PutMapping("/Update")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ReferenceDTO> update(@RequestBody final ReferenceDTO referenceDTO) {
+    public ResponseEntity<ReferenceDTO> update(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Reference data to update",
+                    required = true)
+            @RequestBody final ReferenceDTO referenceDTO) {
+
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Reference reference = dtoConverter.toReference(referenceDTO, userService.get(userDetails.getId()));
 
@@ -115,9 +146,13 @@ public class ReferenceController {
         } else return new ResponseEntity<>(HttpStatus.NOT_MODIFIED);
     }
 
+    @Operation(summary = "Delete a reference by ID")
     @DeleteMapping("/Delete/{id}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> delete(@PathVariable final Integer id) {
+    public ResponseEntity<?> delete(
+            @Parameter(description = "Reference ID to delete", example = "1")
+            @PathVariable final Integer id) {
+
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Reference reference = referenceService.get(id);
 
@@ -128,9 +163,15 @@ public class ReferenceController {
         } else return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
     }
 
+    @Operation(summary = "Delete multiple references by list of IDs")
     @PostMapping("/DeleteGroup")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> deleteGroup(@RequestBody ArrayList<Integer> idList) {
+    public ResponseEntity<?> deleteGroup(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "List of reference IDs to delete",
+                    required = true)
+            @RequestBody ArrayList<Integer> idList) {
+
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         ArrayList<Integer> newList = verificateUser(userDetails.getId(), idList);
 
@@ -140,13 +181,25 @@ public class ReferenceController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Import references from a file")
     @PostMapping("/Sync")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferencePageDTO> sync(
+            @Parameter(description = "Filter by author", example = "Smith")
             @RequestParam(required = false) String author,
+
+            @Parameter(description = "Filter by title", example = "Artificial Intelligence")
             @RequestParam(required = false) String title,
+
+            @Parameter(description = "Page number", example = "0")
             @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "Page size", example = "10")
             @RequestParam(defaultValue = "10") int size,
+
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Reference library synchronization data",
+                    required = true)
             @RequestBody final ReferenceLibraryDTO referenceLibrary) {
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -165,11 +218,14 @@ public class ReferenceController {
         else return ResponseEntity.ok().body(referencePageDTO);
     }
 
+    @Operation(summary = "Import references from a file")
     @PreAuthorize("hasRole('USER')")
     @PostMapping(value = "/Import", consumes = {"multipart/form-data"})
-    @Operation(summary = "Upload a single File")
     public ResponseEntity<?> importReferences(
+            @Parameter(description = "File format (bibtex, ris, etc)", example = "bibtex")
             @RequestParam String format,
+
+            @Parameter(description = "File to upload")
             @RequestParam("file") MultipartFile uploadfile) {
 
         if (uploadfile.isEmpty())
@@ -195,13 +251,20 @@ public class ReferenceController {
         }
 
     }
-
+    @Operation(summary = "Export references to a file")
     @RequestMapping(path = "/Export", method = RequestMethod.POST)
-    @Operation(summary = "Download a File")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Resource> exportReferences(
+
+            @Parameter(description = "Name of the exported file", example = "references.bib")
             @RequestParam String fileName,
+
+            @Parameter(description = "Export format", example = "bibtex")
             @RequestParam String format,
+
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "List of reference IDs to export",
+                    required = true)
             @RequestBody final ArrayList<Integer> idList) throws IOException {
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -235,13 +298,25 @@ public class ReferenceController {
                 .body(resource);
     }
 
+    @Operation(summary = "Get references from all users (manager only)")
     @PostMapping("/GetAllFromUsers")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ReferencePageDTO> getAllFromUsers(
+            @Parameter(description = "Filter by publication year", example = "2024")
             @RequestParam(required = false) String year,
+
+            @Parameter(description = "Filter by title", example = "Deep Learning")
             @RequestParam(required = false) String title,
+
+            @Parameter(description = "Page number", example = "0")
             @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "Page size", example = "5")
             @RequestParam(defaultValue = "5") int size,
+
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Sorting configuration",
+                    required = false)
             @RequestBody(required = false) SortReference sort) {
 
         Page<Reference> pageTuts = referenceService.getAllFromUsers(year, title, page, size, sort);

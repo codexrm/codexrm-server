@@ -1,9 +1,17 @@
 package io.github.codexrm.server.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Booklet reference information")
 public class BookLetReferenceDTO extends ReferenceDTO {
 
+    @Schema(description = "Author of the booklet", example = "John Smith")
     private String author;
+
+    @Schema(description = "How the booklet was published", example = "Online publication")
     private String howpublished;
+
+    @Schema(description = "Publication address or location", example = "New York")
     private String address;
 
     public BookLetReferenceDTO() {}

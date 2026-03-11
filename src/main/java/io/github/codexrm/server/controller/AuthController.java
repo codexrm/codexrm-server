@@ -9,6 +9,8 @@ import io.github.codexrm.server.security.jwt.JwtUtils;
 import io.github.codexrm.server.security.services.RefreshTokenService;
 import io.github.codexrm.server.security.services.UserDetailsImpl;
 import io.github.codexrm.server.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentication", description = "Authentication and authorization operations")
 public class AuthController {
 
     private final UserService userService;
@@ -44,8 +47,13 @@ public class AuthController {
         this.jwtUtils = jwtUtils;
     }
 
+    @Operation(summary = "Register a new user account")
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
+    public ResponseEntity<?> registerUser(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "User registration information",
+                    required = true)
+            @Valid @RequestBody SignupRequest signUpRequest) {
 
         String exist = userService.validateUser(signUpRequest.getUsername(), signUpRequest.getEmail());
 
@@ -64,8 +72,13 @@ public class AuthController {
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
 
+    @Operation(summary = "Authenticate user and generate JWT token")
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "User login credentials",
+                    required = true)
+            @Valid @RequestBody LoginRequest loginRequest) {
 
         Authentication authentication = authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
@@ -88,8 +101,13 @@ public class AuthController {
                 userDetails.getLastName(), userDetails.isEnabled(), roles));
     }
 
+    @Operation(summary = "Generate a new JWT token using a refresh token")
     @PostMapping("/refreshtoken")
-    public ResponseEntity<?> refreshtoken(@Valid @RequestBody TokenRefreshRequest request) {
+    public ResponseEntity<?> refreshtoken(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Refresh token request",
+                    required = true)
+            @Valid @RequestBody TokenRefreshRequest request) {
 
         String requestRefreshToken = request.getRefreshToken();
 
@@ -104,6 +122,7 @@ public class AuthController {
                         "Refresh token is not in database!"));
     }
 
+    @Operation(summary = "Generate a new JWT token using a refresh token")
     @PostMapping("/signout")
     public ResponseEntity<?> logoutUser() {
 

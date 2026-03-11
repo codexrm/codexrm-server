@@ -1,9 +1,17 @@
 package io.github.codexrm.server.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Pagination information for paged responses")
 public class PageDTO {
 
+    @Schema(description = "Current page number", example = "0")
     private Integer currentPage;
+
+    @Schema(description = "Total number of elements available", example = "125")
     private Long totalElement;
+
+    @Schema(description = "Total number of pages available", example = "13")
     private Integer totalPages;
 
     public PageDTO() {}

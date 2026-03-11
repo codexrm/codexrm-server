@@ -1,9 +1,17 @@
 package io.github.codexrm.server.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Book section reference information")
 public class BookSectionReferenceDTO extends BookReferenceDTO {
 
+    @Schema(description = "Chapter of the book where the section appears", example = "5")
     private String chapter;
+
+    @Schema(description = "Page range of the section", example = "120-135")
     private String pages;
+
+    @Schema(description = "Type of section (e.g., chapter, appendix)", example = "chapter")
     private String type;
 
     public BookSectionReferenceDTO() {}

@@ -1,12 +1,26 @@
 package io.github.codexrm.server.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Article reference information")
 public class ArticleReferenceDTO extends ReferenceDTO {
 
+    @Schema(description = "Author of the article", example = "Ian Goodfellow")
     private String author;
+
+    @Schema(description = "Journal where the article was published", example = "Nature")
     private String journal;
+
+    @Schema(description = "Journal volume", example = "12")
     private String volume;
+
+    @Schema(description = "Journal issue number", example = "3")
     private String number;
+
+    @Schema(description = "Page range of the article", example = "120-135")
     private String pages;
+
+    @Schema(description = "ISSN of the journal", example = "1234-5678")
     private String issn;
 
     public ArticleReferenceDTO() {}
