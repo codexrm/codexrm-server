@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Thesis reference information")
 public class ThesisReferenceDTO extends ReferenceDTO {
 
-    @Schema(description = "Author of the thesis", example = "Maria Gonzalez")
+    @Schema(description = "Author of the thesis", example = "Gonzalez,Maria")
     private String author;
 
     @Schema(description = "University or institution where the thesis was submitted", example = "University of Havana")
@@ -14,7 +14,7 @@ public class ThesisReferenceDTO extends ReferenceDTO {
     @Schema(description = "Type of thesis", example = "PhD Thesis")
     private String type;
 
-    @Schema(description = "Location of the university or institution", example = "Havana")
+    @Schema(description = "Location of the university or institution", example = "La Habana, Cuba")
     private String address;
 
     public ThesisReferenceDTO() {}

@@ -22,7 +22,7 @@ public class ReferenceDTO {
     @Schema(description = "Title of the reference", example = "Deep Learning")
     protected String title;
 
-    @Schema(description = "Year of publication", example = "2016")
+    @Schema(description = "Year of publication", example = "2016 or 2020--2021")
     protected String year;
 
     @Schema(description = "Month of publication", example = "July")

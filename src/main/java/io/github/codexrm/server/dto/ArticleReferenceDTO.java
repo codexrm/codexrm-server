@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Article reference information")
 public class ArticleReferenceDTO extends ReferenceDTO {
 
-    @Schema(description = "Author of the article", example = "Ian Goodfellow")
+    @Schema(description = "Author of the article", example = "Garcia,Juan")
     private String author;
 
     @Schema(description = "Journal where the article was published", example = "Nature")

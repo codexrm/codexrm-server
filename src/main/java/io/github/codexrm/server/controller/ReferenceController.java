@@ -13,6 +13,7 @@ import io.github.codexrm.server.service.ReferenceService;
 import io.github.codexrm.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jbibtex.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +45,7 @@ import java.util.Objects;
 @Tag(name = "References", description = "Operations related to user references")
 public class ReferenceController {
 
-    private static final String UPLOADED_FOLDER = "tempUpload";
+    private static final String UPLOADED_FOLDER = "/app/tempUpload";
     private final ReferenceService referenceService;
     private final UserService userService;
     private final DTOConverter dtoConverter;
@@ -62,19 +63,18 @@ public class ReferenceController {
     public ResponseEntity<ReferencePageDTO> getAll(
 
             @Parameter(description = "Filter references by publication year", example = "2024")
-            @RequestParam(required = false) String year,
+            @RequestParam( name = "year", required = false) String year,
 
             @Parameter(description = "Filter references by title", example = "Machine Learning")
-            @RequestParam(required = false) String title,
+            @RequestParam(name = "title", required = false) String title,
 
             @Parameter(description = "Page number", example = "0")
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(name = "page", defaultValue = "0") int page,
 
             @Parameter(description = "Page size", example = "10")
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "size", defaultValue = "10") int size,
 
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Sorting configuration for references")
+            @Parameter(description = "Sorting options for reference")
             @RequestBody(required = false) SortReference sort) {
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -95,10 +95,15 @@ public class ReferenceController {
     @GetMapping("/Get/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferenceDTO> getById(
-            @Parameter(description = "Reference ID", example = "1")
-            @PathVariable final Integer id) {
+            @Parameter(
+                    name = "id",
+                    description = "Reference ID",
+                    example = "1",
+                    required = true,
+                    in = ParameterIn.PATH )
+            @PathVariable("id") final Integer id){
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Reference reference = referenceService.get(id);
 
         if (verificateUser(userDetails.getId(), reference.getUser().getId())) {
@@ -150,8 +155,13 @@ public class ReferenceController {
     @DeleteMapping("/Delete/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> delete(
-            @Parameter(description = "Reference ID to delete", example = "1")
-            @PathVariable final Integer id) {
+            @Parameter(
+                    name = "id",
+                    description = "Reference ID",
+                    example = "1",
+                    required = true,
+                    in = ParameterIn.PATH )
+            @PathVariable("id") final Integer id){
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         Reference reference = referenceService.get(id);
@@ -186,16 +196,16 @@ public class ReferenceController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferencePageDTO> sync(
             @Parameter(description = "Filter by author", example = "Smith")
-            @RequestParam(required = false) String author,
+            @RequestParam(name = "author", required = false) String author,
 
             @Parameter(description = "Filter by title", example = "Artificial Intelligence")
-            @RequestParam(required = false) String title,
+            @RequestParam(name = "title", required = false) String title,
 
             @Parameter(description = "Page number", example = "0")
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(name = "page", defaultValue = "0") int page,
 
             @Parameter(description = "Page size", example = "10")
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(name = "size", defaultValue = "10") int size,
 
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Reference library synchronization data",
@@ -222,22 +232,24 @@ public class ReferenceController {
     @PreAuthorize("hasRole('USER')")
     @PostMapping(value = "/Import", consumes = {"multipart/form-data"})
     public ResponseEntity<?> importReferences(
-            @Parameter(description = "File format (bibtex, ris, etc)", example = "bibtex")
-            @RequestParam String format,
+
+            @Parameter(description = "Import format", example = "RIS OR BIBTEX")
+            @RequestParam("format") String format,
 
             @Parameter(description = "File to upload")
-            @RequestParam("file") MultipartFile uploadfile) {
+            @RequestParam("uploadFile") MultipartFile uploadFile) {
 
-        if (uploadfile.isEmpty())
-            return new ResponseEntity("You must select a file!", HttpStatus.OK);
+        if (uploadFile.isEmpty())
+            return new ResponseEntity<>("You must select a file!", HttpStatus.OK);
 
         try {
-            saveUploadedFiles(Arrays.asList(uploadfile));
+            saveUploadedFiles(List.of(uploadFile));
 
             UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             User user = userService.get(userDetails.getId());
 
-            File file = new File(UPLOADED_FOLDER, uploadfile.getOriginalFilename());
+            File file = new File(UPLOADED_FOLDER, uploadFile.getOriginalFilename());
+
             ArrayList<Reference> refereceList = referenceService.importReferences(file.getPath(), format);
             for (Reference reference : refereceList) {
                 reference.setUser(user);
@@ -256,11 +268,11 @@ public class ReferenceController {
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Resource> exportReferences(
 
-            @Parameter(description = "Name of the exported file", example = "references.bib")
-            @RequestParam String fileName,
+            @Parameter(description = "Name of the exported file", example = "references.txt")
+            @RequestParam("fileName") String fileName,
 
-            @Parameter(description = "Export format", example = "bibtex")
-            @RequestParam String format,
+            @Parameter(description = "Export format", example = "RIS OR BIBTEX")
+            @RequestParam("format") String format,
 
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "List of reference IDs to export",
@@ -276,12 +288,13 @@ public class ReferenceController {
         }
 
         Path path = Paths.get(UPLOADED_FOLDER, fileName);
+        Files.createDirectories(path.getParent());
         File file = new File(path.toString());
 
         try {
             referenceService.exportReferences(file, referenceList, format);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Error exporting file", e);
         }
 
         HttpHeaders headers = new HttpHeaders();
@@ -302,21 +315,20 @@ public class ReferenceController {
     @PostMapping("/GetAllFromUsers")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ReferencePageDTO> getAllFromUsers(
-            @Parameter(description = "Filter by publication year", example = "2024")
-            @RequestParam(required = false) String year,
 
-            @Parameter(description = "Filter by title", example = "Deep Learning")
-            @RequestParam(required = false) String title,
+            @Parameter(description = "Filter references by publication year", example = "2024")
+            @RequestParam( name = "year", required = false) String year,
+
+            @Parameter(description = "Filter references by title", example = "Machine Learning")
+            @RequestParam(name = "title", required = false) String title,
 
             @Parameter(description = "Page number", example = "0")
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(name = "page", defaultValue = "0") int page,
 
-            @Parameter(description = "Page size", example = "5")
-            @RequestParam(defaultValue = "5") int size,
+            @Parameter(description = "Page size", example = "10")
+            @RequestParam(name = "size", defaultValue = "10") int size,
 
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Sorting configuration",
-                    required = false)
+            @Parameter(description = "Sorting options for reference")
             @RequestBody(required = false) SortReference sort) {
 
         Page<Reference> pageTuts = referenceService.getAllFromUsers(year, title, page, size, sort);
@@ -346,8 +358,17 @@ public class ReferenceController {
             if (file.isEmpty())
                 continue;
 
+            String fileName = file.getOriginalFilename();
+
+            if (fileName == null || fileName.isBlank()) {
+                fileName = "upload.tmp";
+            }
+
+            fileName = Paths.get(fileName).getFileName().toString();
             byte[] bytes = file.getBytes();
-            Path path = Paths.get(UPLOADED_FOLDER, file.getOriginalFilename());
+            Path path = Paths.get(UPLOADED_FOLDER, fileName);
+
+            Files.createDirectories(path.getParent());
             Files.write(path, bytes);
         }
     }

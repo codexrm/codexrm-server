@@ -5,10 +5,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Book reference information")
 public class BookReferenceDTO extends ReferenceDTO {
 
-    @Schema(description = "Author of the book", example = "Robert C. Martin")
+    @Schema(description = "Author of the book", example = "Martin,Robert")
     protected String author;
 
-    @Schema(description = "Editor of the book", example = "John Smith")
+    @Schema(description = "Editor of the book", example = "Smith,John")
     protected String editor;
 
     @Schema(description = "Publisher of the book", example = "Prentice Hall")
@@ -23,13 +23,13 @@ public class BookReferenceDTO extends ReferenceDTO {
     @Schema(description = "Book number within the series", example = "12")
     protected String number;
 
-    @Schema(description = "Publication address or location", example = "Boston")
+    @Schema(description = "Publication address or location", example = "São Paulo, Brasil")
     protected String address;
 
-    @Schema(description = "Edition of the book", example = "2nd")
+    @Schema(description = "Edition of the book", example = "2.")
     protected String edition;
 
-    @Schema(description = "ISBN identifier of the book", example = "978-0132350884")
+    @Schema(description = "ISBN identifier of the book", example = "123-456-789-0")
     protected String isbn;
 
     public BookReferenceDTO() {}

@@ -13,6 +13,7 @@ import io.github.codexrm.server.security.services.UserDetailsImpl;
 import io.github.codexrm.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -44,19 +45,18 @@ public class UserController {
         this.encoder = encoder;
     }
 
-
     @Operation(summary = "Get paginated list of users with optional filtering and sorting")
     @PostMapping("/GetAll")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserPageDTO> getAll(
             @Parameter(description = "Filter users by username", example = "marynes")
-            @RequestParam(required = false) String username,
+            @RequestParam(name = "username", required = false) String username,
 
             @Parameter(description = "Page number (starts at 0)", example = "0")
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(name = "page", defaultValue = "0") int page,
 
             @Parameter(description = "Number of users per page", example = "5")
-            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(name = "size", defaultValue = "5") int size,
 
             @Parameter(description = "Sorting options for users")
             @RequestBody(required = false) SortUser sort){
@@ -78,8 +78,13 @@ public class UserController {
     @GetMapping("/Get/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER') or hasRole('MODERATOR') or hasRole('AUDITOR')")
     public ResponseEntity<UserDTO> getById(
-            @Parameter(description = "User ID", example = "1")
-            @PathVariable final Integer id) {
+            @Parameter(
+                    name = "id",
+                    description = "User ID",
+                    example = "1",
+                    required = true,
+                    in = ParameterIn.PATH
+            ) @PathVariable("id") Integer id)  {
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if(containsRole(userDetails))
@@ -183,8 +188,13 @@ public class UserController {
     @DeleteMapping("/Delete/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delete(
-            @Parameter(description = "User ID to delete", example = "1")
-            @PathVariable final Integer id) {
+            @Parameter(
+                    name = "id",
+                    description = "User ID",
+                    example = "1",
+                    required = true,
+                    in = ParameterIn.PATH )
+            @PathVariable("id") final Integer id) {
 
         userService.delete(id);
         return ResponseEntity.ok().build();

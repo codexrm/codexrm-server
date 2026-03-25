@@ -1,5 +1,7 @@
 package io.github.codexrm.server.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public enum SortReference {
 
     idDesc("id,desc"),
@@ -17,6 +19,16 @@ public enum SortReference {
 
     SortReference(String description) {
         this.description = description;
+    }
+
+    @JsonCreator
+    public static SortReference fromValue(String value) {
+        for (SortReference sort : SortReference.values()) {
+            if (sort.description.equalsIgnoreCase(value)) {
+                return sort;
+            }
+        }
+        throw new IllegalArgumentException("Invalid sort value: " + value);
     }
 
     @Override
