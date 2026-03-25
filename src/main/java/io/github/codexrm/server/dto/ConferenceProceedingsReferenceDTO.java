@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Conference proceedings reference information")
 public class ConferenceProceedingsReferenceDTO extends ReferenceDTO {
 
-    @Schema(description = "Editor of the conference proceedings", example = "John Smith")
+    @Schema(description = "Editor of the conference proceedings", example = "Smith,John")
     private String editor;
 
     @Schema(description = "Volume of the proceedings", example = "10")
@@ -17,7 +17,7 @@ public class ConferenceProceedingsReferenceDTO extends ReferenceDTO {
     @Schema(description = "Series of the conference proceedings", example = "Lecture Notes in Computer Science")
     private String series;
 
-    @Schema(description = "Location where the conference took place", example = "Paris")
+    @Schema(description = "Location where the conference took place", example = "Paris, Francia")
     private String address;
 
     @Schema(description = "Publisher of the conference proceedings", example = "Springer")

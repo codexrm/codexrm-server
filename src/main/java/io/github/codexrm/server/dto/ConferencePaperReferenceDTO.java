@@ -5,13 +5,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Conference paper reference information")
 public class ConferencePaperReferenceDTO extends ReferenceDTO {
 
-    @Schema(description = "Author of the conference paper", example = "Andrew Ng")
+    @Schema(description = "Author of the conference paper", example = "Navarro,Andrew")
     private String author;
 
     @Schema(description = "Title of the book or proceedings where the paper appears", example = "Proceedings of the International Conference on Machine Learning")
     private String bookTitle;
 
-    @Schema(description = "Editor of the conference proceedings", example = "John Smith")
+    @Schema(description = "Editor of the conference proceedings", example = "Smith,John")
     private String editor;
 
     @Schema(description = "Volume of the proceedings", example = "15")
@@ -26,7 +26,7 @@ public class ConferencePaperReferenceDTO extends ReferenceDTO {
     @Schema(description = "Page range of the paper", example = "210-225")
     private String pages;
 
-    @Schema(description = "Location where the conference took place", example = "Berlin")
+    @Schema(description = "Location where the conference took place", example = "Berlin, Alemania")
     private String address;
 
     @Schema(description = "Organization responsible for the conference", example = "IEEE")

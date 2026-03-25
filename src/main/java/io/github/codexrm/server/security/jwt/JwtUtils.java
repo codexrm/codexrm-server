@@ -30,7 +30,7 @@ public class JwtUtils {
     }
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     public String generateJwtToken(UserDetailsImpl userPrincipal) {

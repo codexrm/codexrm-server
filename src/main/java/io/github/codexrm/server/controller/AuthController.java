@@ -12,6 +12,7 @@ import io.github.codexrm.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -122,15 +123,36 @@ public class AuthController {
                         "Refresh token is not in database!"));
     }
 
-    @Operation(summary = "Generate a new JWT token using a refresh token")
+    @Operation(summary = "Logout user and invalidate refresh tokens")
     @PostMapping("/signout")
     public ResponseEntity<?> logoutUser() {
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Integer userId = userDetails.getId();
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
 
-        refreshTokenService.deleteByUserId(userId);
-        return ResponseEntity.ok(new MessageResponse("Log out successful!"));
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(new MessageResponse("User not authenticated"));
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetailsImpl) {
+
+            UserDetailsImpl userDetails = (UserDetailsImpl) principal;
+
+            refreshTokenService.deleteByUserId(userDetails.getId());
+
+            SecurityContextHolder.clearContext();
+
+            return ResponseEntity.ok(new MessageResponse("Log out successful!"));
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(new MessageResponse("Invalid authentication principal"));
     }
 }
 
