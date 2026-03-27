@@ -41,7 +41,6 @@ import java.util.Objects;
 
 @RequestMapping("/api/Reference")
 @RestController
-@CrossOrigin(origins = "*", maxAge = 3600)
 @Tag(name = "References", description = "Operations related to user references")
 public class ReferenceController {
 

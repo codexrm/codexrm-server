@@ -30,7 +30,6 @@ import java.util.*;
 
 @RequestMapping("/api/User")
 @RestController
-@CrossOrigin(origins = "*", maxAge = 3600)
 @Tag(name = "Users", description = "User management operations")
 public class UserController {
 
