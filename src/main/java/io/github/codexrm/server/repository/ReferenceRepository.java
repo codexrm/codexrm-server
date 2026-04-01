@@ -15,4 +15,6 @@ public interface ReferenceRepository extends JpaRepository<Reference, Integer> {
         Page<Reference> findByUserAndTitleContaining(User user, String title, Pageable pageable);
         Page<Reference> findByYearContaining(String year, Pageable pageable);
         Page<Reference> findByTitleContaining(String title, Pageable pageable);
+        Page<Reference> findByUserAndYearContainingAndTitleContaining(User user, String year, String title, Pageable pageable);
+        Page<Reference> findByYearContainingAndTitleContaining(String year, String title, Pageable pageable);
 }

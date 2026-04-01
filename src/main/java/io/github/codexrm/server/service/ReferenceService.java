@@ -3,6 +3,7 @@ package io.github.codexrm.server.service;
 import io.github.codexrm.server.component.ExportR;
 import io.github.codexrm.server.component.ImportR;
 import io.github.codexrm.server.enums.SortReference;
+import io.github.codexrm.server.exception.ResourceNotFoundException;
 import io.github.codexrm.server.model.Reference;
 import io.github.codexrm.server.model.User;
 import io.github.codexrm.server.repository.ReferenceRepository;
@@ -27,7 +28,7 @@ public class ReferenceService {
     private final ReferenceRepository referenceRepository;
     private final ImportR importR;
     private final ExportR exportR;
-    
+
     @Autowired
     public ReferenceService(final ReferenceRepository referenceRepository) {
         this.referenceRepository = referenceRepository;
@@ -42,24 +43,21 @@ public class ReferenceService {
 
         if (year == null && title == null) {
             return referenceRepository.findByUser(user, pagingSort);
-       
+
+        } else if (year == null) {
+            return referenceRepository.findByUserAndTitleContaining(user, title, pagingSort);
+
+        } else if (title == null) {
+            return referenceRepository.findByUserAndYearContaining(user, year, pagingSort);
+
         } else {
-            if (year == null) {
-                return referenceRepository.findByUserAndTitleContaining(user, title, pagingSort);
-           
-            } else {
-                if (title == null) {
-                    return referenceRepository.findByUserAndYearContaining(user, year, pagingSort);
-              
-                } else {
-                    return null;
-                }
-            }
+            return referenceRepository.findByUserAndYearContainingAndTitleContaining(user, year, title, pagingSort);
         }
     }
 
     public Reference get(Integer id) {
-        return referenceRepository.findById(id).get();
+        return referenceRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Reference not found"));
     }
 
     public Reference add(Reference reference) {
@@ -77,6 +75,9 @@ public class ReferenceService {
     }
 
     public void delete(Integer id) {
+        if (!referenceRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Reference not found with id " + id);
+        }
         referenceRepository.deleteById(id);
     }
 
@@ -101,63 +102,40 @@ public class ReferenceService {
     }
 
     public Page<Reference> getAllFromUsers(String year, String title, int page, int size, SortReference sort) {
+
         Sort.Order order = getOrder(sort);
         Pageable pagingSort = PageRequest.of(page, size, Sort.by(order));
 
         if (year == null && title == null) {
             return referenceRepository.findAll(pagingSort);
-        
+
+        } else if (year == null) {
+            return referenceRepository.findByTitleContaining(title, pagingSort);
+
+        } else if (title == null) {
+            return referenceRepository.findByYearContaining(year, pagingSort);
+
         } else {
-            if (year == null) {
-                return referenceRepository.findByTitleContaining(title, pagingSort);
-           
-            } else {
-                if (title == null) {
-                    return referenceRepository.findByYearContaining(year, pagingSort);
-               
-                } else {
-                    return null;
-                }
-            }
+            return referenceRepository.findByYearContainingAndTitleContaining(year, title, pagingSort);
         }
     }
 
     private Sort.Order getOrder(SortReference sort) {
-        if (sort == null)
+
+        if (sort == null) {
             return new Sort.Order(Sort.Direction.ASC, "id");
-
-         else {
-            switch (sort) {
-                case idAsc:
-                    return new Sort.Order(Sort.Direction.ASC, "id");
-
-                case idDesc:
-                    return new Sort.Order(Sort.Direction.DESC, "id");
-
-                case yearAsc:
-                    return new Sort.Order(Sort.Direction.ASC, "year");
-
-                case yearDesc:
-                    return new Sort.Order(Sort.Direction.DESC, "year");
-
-                case titleAsc:
-                    return new Sort.Order(Sort.Direction.ASC, "title");
-
-                case titleDesc:
-                    return new Sort.Order(Sort.Direction.DESC, "title");
-
-                case monthAsc:
-                    return new Sort.Order(Sort.Direction.ASC, "month");
-
-                case monthDesc:
-                    return new Sort.Order(Sort.Direction.DESC, "month");
-
-                case noteAsc:
-                    return new Sort.Order(Sort.Direction.ASC, "note");
-
-                default:
-                    return new Sort.Order(Sort.Direction.DESC, "note");
-            }
         }
+        return switch (sort) {
+            case idAsc -> Sort.Order.asc("id");
+            case idDesc -> Sort.Order.desc("id");
+            case yearAsc -> Sort.Order.asc("year");
+            case yearDesc -> Sort.Order.desc("year");
+            case titleAsc -> Sort.Order.asc("title");
+            case titleDesc -> Sort.Order.desc("title");
+            case monthAsc -> Sort.Order.asc("month");
+            case monthDesc -> Sort.Order.desc("month");
+            case noteAsc -> Sort.Order.asc("note");
+            default -> Sort.Order.desc("note");
+        };
     }
 }

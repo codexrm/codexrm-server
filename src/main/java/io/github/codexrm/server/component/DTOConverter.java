@@ -25,197 +25,137 @@ public class DTOConverter {
         this.validation = new ValidateReference();
     }
 
-    //Reference
+    // =========================
+    // ====== REFERENCE ========
+    // =========================
+
     public ReferenceDTO toReferenceDTO(final Reference reference) {
 
-        reference.getUser().setReferenceList(new ArrayList<>());
-
-        if (reference.getClass() == ArticleReference.class) {
+        if (reference instanceof ArticleReference) {
             return modelMapper.map(reference, ArticleReferenceDTO.class);
-        } else if (reference.getClass() == BookSectionReference.class) {
+
+        } else if (reference instanceof BookSectionReference) {
             return modelMapper.map(reference, BookSectionReferenceDTO.class);
-        } else if (reference.getClass() == BookReference.class) {
+
+        } else if (reference instanceof BookReference) {
             return modelMapper.map(reference, BookReferenceDTO.class);
-        } else if (reference.getClass() == BookLetReference.class) {
+
+        } else if (reference instanceof BookLetReference) {
             return modelMapper.map(reference, BookLetReferenceDTO.class);
-        } else if (reference.getClass() == ConferenceProceedingReference.class) {
+
+        } else if (reference instanceof ConferenceProceedingReference) {
             return modelMapper.map(reference, ConferenceProceedingsReferenceDTO.class);
-        } else if (reference.getClass() == ConferencePaperReference.class) {
+
+        } else if (reference instanceof ConferencePaperReference) {
             return modelMapper.map(reference, ConferencePaperReferenceDTO.class);
-        } else if (reference.getClass() == WebPageReference.class) {
+
+        } else if (reference instanceof WebPageReference) {
             return modelMapper.map(reference, WebPageReferenceDTO.class);
-        } else
+
+        } else {
             return modelMapper.map(reference, ThesisReferenceDTO.class);
+        }
     }
 
     public Reference toReference(final ReferenceDTO referenceDTO, User user) {
 
         Reference reference;
 
-        if (referenceDTO.getClass() == ArticleReferenceDTO.class) {
+        if (referenceDTO instanceof ArticleReferenceDTO dto) {
 
-            ArticleReference article = modelMapper.map(referenceDTO, ArticleReference.class);
-            validation.validateArticleReference(article);
-            reference = validation.validateRequiredArticle(article);
+            ArticleReference entity = modelMapper.map(dto, ArticleReference.class);
+            validation.validateArticleReference(entity);
+            reference = validation.validateRequiredArticle(entity);
 
-        } else if (referenceDTO.getClass() == BookSectionReferenceDTO.class) {
+        } else if (referenceDTO instanceof BookSectionReferenceDTO dto) {
 
-            BookSectionReference section = modelMapper.map(referenceDTO, BookSectionReference.class);
-            validation.validateBookSectionReference(section);
-            reference = validation.validateRequiredBookSection(section);
+            BookSectionReference entity = modelMapper.map(dto, BookSectionReference.class);
+            validation.validateBookSectionReference(entity);
+            reference = validation.validateRequiredBookSection(entity);
 
-        } else if (referenceDTO.getClass() == BookReferenceDTO.class) {
+        } else if (referenceDTO instanceof BookReferenceDTO dto) {
 
-            BookReference book = modelMapper.map(referenceDTO, BookReference.class);
-            validation.validateBookReference(book);
-            reference = validation.validateRequiredBook(book);
+            BookReference entity = modelMapper.map(dto, BookReference.class);
+            validation.validateBookReference(entity);
+            reference = validation.validateRequiredBook(entity);
 
-        } else if (referenceDTO.getClass() == BookLetReferenceDTO.class) {
+        } else if (referenceDTO instanceof BookLetReferenceDTO dto) {
 
-            BookLetReference let = modelMapper.map(referenceDTO, BookLetReference.class);
-            validation.validateBookLetReference(let);
-            reference = validation.validateRequiredBookLet(let);
+            BookLetReference entity = modelMapper.map(dto, BookLetReference.class);
+            validation.validateBookLetReference(entity);
+            reference = validation.validateRequiredBookLet(entity);
 
-        } else if (referenceDTO.getClass() == ConferenceProceedingsReferenceDTO.class) {
+        } else if (referenceDTO instanceof ConferenceProceedingsReferenceDTO dto) {
 
-            ConferenceProceedingReference proceedings = modelMapper.map(referenceDTO, ConferenceProceedingReference.class);
-            validation.validateConferenceProceedingsReference(proceedings);
-            reference = validation.validateRequiredConferenceProceedings(proceedings);
+            ConferenceProceedingReference entity = modelMapper.map(dto, ConferenceProceedingReference.class);
+            validation.validateConferenceProceedingsReference(entity);
+            reference = validation.validateRequiredConferenceProceedings(entity);
 
-        } else if (referenceDTO.getClass() == ConferencePaperReferenceDTO.class) {
+        } else if (referenceDTO instanceof ConferencePaperReferenceDTO dto) {
 
-            ConferencePaperReference paper = modelMapper.map(referenceDTO, ConferencePaperReference.class);
-            validation.validateConferencePaperReference(paper);
-            reference = validation.validateRequiredConferencePaper(paper);
+            ConferencePaperReference entity = modelMapper.map(dto, ConferencePaperReference.class);
+            validation.validateConferencePaperReference(entity);
+            reference = validation.validateRequiredConferencePaper(entity);
 
-        } else if (referenceDTO.getClass() == WebPageReferenceDTO.class) {
+        } else if (referenceDTO instanceof WebPageReferenceDTO dto) {
 
-            WebPageReference webPage = modelMapper.map(referenceDTO, WebPageReference.class);
-            validation.validateWebPageReference(webPage);
-            reference = webPage;
+            WebPageReference entity = modelMapper.map(dto, WebPageReference.class);
+            validation.validateWebPageReference(entity);
+            reference = entity;
 
         } else {
 
-            ThesisReference thesis = modelMapper.map(referenceDTO, ThesisReference.class);
-            validation.validateThesisReference(thesis);
-            reference = validation.validateRequiredThesis(thesis);
+            ThesisReference entity = modelMapper.map(referenceDTO, ThesisReference.class);
+            validation.validateThesisReference(entity);
+            reference = validation.validateRequiredThesis(entity);
         }
+
         reference.setUser(user);
         return reference;
     }
 
     public List<ReferenceDTO> toReferenceDTOList(final List<Reference> referenceList) {
-
-        List<ReferenceDTO> referenceDTOList = new ArrayList<>();
-        referenceList.forEach(reference ->
-                referenceDTOList.add(toReferenceDTO(reference))
-        );
-        return referenceDTOList;
+        return referenceList.stream()
+                .map(this::toReferenceDTO)
+                .toList();
     }
 
     public List<Reference> toReferenceList(final List<ReferenceDTO> referenceDTOList, User user) {
 
         List<Reference> referenceList = new ArrayList<>();
-        for (ReferenceDTO referenceDTO : referenceDTOList) {
-            Reference reference = toReference(referenceDTO, user);
-            if (reference != null)
+
+        for (ReferenceDTO dto : referenceDTOList) {
+            Reference reference = toReference(dto, user);
+            if (reference != null) {
                 referenceList.add(reference);
+            }
         }
         return referenceList;
     }
 
     public Reference createReference(final ReferenceDTO referenceDTO, User user) {
-
-        if (referenceDTO.getClass() == ArticleReferenceDTO.class) {
-
-            ArticleReferenceDTO articleDTO = (ArticleReferenceDTO) referenceDTO;
-            ArticleReference article = new ArticleReference(articleDTO.getTitle(), articleDTO.getYear(), articleDTO.getMonth(), articleDTO.getNote(), user,
-                    articleDTO.getAuthor(), articleDTO.getJournal(), articleDTO.getVolume(), articleDTO.getNumber(), articleDTO.getPages(), articleDTO.getIssn());
-
-            validation.validateArticleReference(article);
-            return validation.validateRequiredArticle(article);
-
-        } else if (referenceDTO.getClass() == BookSectionReferenceDTO.class) {
-
-            BookSectionReferenceDTO sectionDTO = (BookSectionReferenceDTO) referenceDTO;
-            BookSectionReference section = new BookSectionReference(sectionDTO.getTitle(), sectionDTO.getYear(), sectionDTO.getMonth(), sectionDTO.getNote(), user,
-                    sectionDTO.getAuthor(), sectionDTO.getEditor(), sectionDTO.getPublisher(), sectionDTO.getVolume(), sectionDTO.getNumber(), sectionDTO.getSeries(), sectionDTO.getAddress(), sectionDTO.getEdition(), sectionDTO.getIsbn(),
-                    sectionDTO.getChapter(), sectionDTO.getPages(), sectionDTO.getType());
-
-            validation.validateBookSectionReference(section);
-            return validation.validateRequiredBookSection(section);
-
-        } else if (referenceDTO.getClass() == BookReferenceDTO.class) {
-
-            BookReferenceDTO bookDTO = (BookReferenceDTO) referenceDTO;
-            BookReference book = new BookReference(bookDTO.getTitle(), bookDTO.getYear(), bookDTO.getMonth(), bookDTO.getNote(), user,
-                    bookDTO.getAuthor(), bookDTO.getEditor(), bookDTO.getPublisher(), bookDTO.getVolume(), bookDTO.getNumber(), bookDTO.getSeries(), bookDTO.getAddress(), bookDTO.getEdition(), bookDTO.getIsbn());
-
-            validation.validateBookReference(book);
-            return validation.validateRequiredBook(book);
-
-        } else if (referenceDTO.getClass() == BookLetReferenceDTO.class) {
-
-            BookLetReferenceDTO letDTO = (BookLetReferenceDTO) referenceDTO;
-            BookLetReference let = new BookLetReference(letDTO.getTitle(), letDTO.getYear(), letDTO.getMonth(), letDTO.getNote(), user,
-                    letDTO.getAuthor(), letDTO.getHowpublished(), letDTO.getAddress());
-
-            validation.validateBookLetReference(let);
-            return validation.validateRequiredBookLet(let);
-
-        } else if (referenceDTO.getClass() == ConferenceProceedingsReferenceDTO.class) {
-
-            ConferenceProceedingsReferenceDTO proceedingsDTO = (ConferenceProceedingsReferenceDTO) referenceDTO;
-            ConferenceProceedingReference proceedings = new ConferenceProceedingReference(proceedingsDTO.getTitle(), proceedingsDTO.getYear(), proceedingsDTO.getMonth(), proceedingsDTO.getNote(), user,
-                    proceedingsDTO.getEditor(), proceedingsDTO.getVolume(), proceedingsDTO.getNumber(), proceedingsDTO.getSeries(), proceedingsDTO.getAddress(), proceedingsDTO.getPublisher(), proceedingsDTO.getIsbn(), proceedingsDTO.getOrganization());
-
-            validation.validateConferenceProceedingsReference(proceedings);
-            return validation.validateRequiredConferenceProceedings(proceedings);
-
-        } else if (referenceDTO.getClass() == ConferencePaperReferenceDTO.class) {
-
-            ConferencePaperReferenceDTO paperDTO = (ConferencePaperReferenceDTO) referenceDTO;
-            ConferencePaperReference paper = new ConferencePaperReference(paperDTO.getTitle(), paperDTO.getYear(), paperDTO.getMonth(), paperDTO.getNote(), user,
-                    paperDTO.getAuthor(), paperDTO.getBookTitle(), paperDTO.getEditor(), paperDTO.getNumber(), paperDTO.getSeries(), paperDTO.getPublisher(), paperDTO.getVolume(), paperDTO.getAddress(), paperDTO.getPages(), paperDTO.getOrganization());
-
-            validation.validateConferencePaperReference(paper);
-            return validation.validateRequiredConferencePaper(paper);
-
-        } else if (referenceDTO.getClass() == WebPageReferenceDTO.class) {
-
-            WebPageReferenceDTO webDTO = (WebPageReferenceDTO) referenceDTO;
-            WebPageReference webPage = new WebPageReference(webDTO.getTitle(), webDTO.getYear(), webDTO.getMonth(), webDTO.getNote(), user, webDTO.getAuthor(), webDTO.getUrl());
-
-            validation.validateWebPageReference(webPage);
-            return webPage;
-
-        } else {
-
-            ThesisReferenceDTO thesisDTO = (ThesisReferenceDTO) referenceDTO;
-            ThesisReference thesis = new ThesisReference(thesisDTO.getTitle(), thesisDTO.getYear(), thesisDTO.getMonth(), thesisDTO.getNote(), user,
-                    thesisDTO.getAuthor(), thesisDTO.getSchool(), thesisDTO.getType(), thesisDTO.getAddress());
-            validation.validateThesisReference(thesis);
-            return validation.validateRequiredThesis(thesis);
-        }
+        return toReference(referenceDTO, user);
     }
 
-    //User
-    public List<UserDTO> toUserDTOList(final List<User> userList) {
+    // =========================
+    // ========= USER ==========
+    // =========================
 
-        List<UserDTO> userDTOList = new ArrayList<>();
-        userList.forEach(user ->
-                userDTOList.add(toUserDTO(user))
-        );
-        return userDTOList;
+    public List<UserDTO> toUserDTOList(final List<User> userList) {
+        return userList.stream()
+                .map(this::toUserDTO)
+                .toList();
     }
 
     public UserDTO toUserDTO(final User user) {
 
         UserDTO userDTO = modelMapper.map(user, UserDTO.class);
         userDTO.getRoles().clear();
-        for (Role r : user.getRoles()) {
-            userDTO.setRol(r.getName().toString());
-        }
+
+        user.getRoles().forEach(role ->
+                userDTO.setRol(role.getName().name())
+        );
+
         return userDTO;
     }
 
@@ -223,33 +163,35 @@ public class DTOConverter {
 
         User user = modelMapper.map(userDTO, User.class);
         user.getRoles().clear();
+
         for (String role : userDTO.getRoles()) {
-            switch (role) {
-                case "ROLE_ADMIN":
-                    Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                    user.setRole(adminRole);
-
-                    break;
-                case "ROLE_MANAGER":
-                    Role managerRole = roleRepository.findByName(ERole.ROLE_MANAGER)
-                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                    user.setRole(managerRole);
-
-                    break;
-
-                case "ROLE_AUDITOR":
-                    Role auditorRole = roleRepository.findByName(ERole.ROLE_AUDITOR)
-                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                    user.setRole(auditorRole);
-
-                    break;
-                default:
-                    Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                    user.setRole(userRole);
-            }
+            user.setRole(getRole(role));
         }
+
         return user;
+    }
+
+    // =========================
+    // ====== HELPERS ==========
+    // =========================
+
+    private Role getRole(String role) {
+        return switch (role) {
+            case "ROLE_ADMIN" ->
+                    roleRepository.findByName(ERole.ROLE_ADMIN)
+                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+
+            case "ROLE_MANAGER" ->
+                    roleRepository.findByName(ERole.ROLE_MANAGER)
+                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+
+            case "ROLE_AUDITOR" ->
+                    roleRepository.findByName(ERole.ROLE_AUDITOR)
+                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+
+            default ->
+                    roleRepository.findByName(ERole.ROLE_USER)
+                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+        };
     }
 }

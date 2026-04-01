@@ -13,7 +13,6 @@ import io.github.codexrm.server.service.ReferenceService;
 import io.github.codexrm.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.jbibtex.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,10 +33,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @RequestMapping("/api/Reference")
 @RestController
@@ -45,6 +41,7 @@ import java.util.Objects;
 public class ReferenceController {
 
     private static final String UPLOADED_FOLDER = "/app/tempUpload";
+
     private final ReferenceService referenceService;
     private final UserService userService;
     private final DTOConverter dtoConverter;
@@ -56,334 +53,261 @@ public class ReferenceController {
         this.dtoConverter = dtoConverter;
     }
 
-    @Operation(summary = "Get paginated references of the authenticated user with optional filters")
+    // ===================== HELPERS =====================
+
+    private User getAuthenticatedUser() {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        return userService.get(userDetails.getId());
+    }
+
+    private boolean isOwner(Integer userId, Integer referenceUserId) {
+        return Objects.equals(referenceUserId, userId);
+    }
+
+    private ArrayList<Integer> filterUserReferences(Integer userId, ArrayList<Integer> referenceIds) {
+        ArrayList<Integer> filtered = new ArrayList<>();
+
+        for (Integer id : referenceIds) {
+            Reference reference = referenceService.get(id);
+            if (isOwner(userId, reference.getUser().getId())) {
+                filtered.add(id);
+            }
+        }
+        return filtered;
+    }
+
+    private ReferencePageDTO buildPageDTO(Page<Reference> page) {
+        if (page.getContent().isEmpty()) return null;
+
+        List<ReferenceDTO> dtoList = dtoConverter.toReferenceDTOList(page.getContent());
+        PageDTO pageDTO = new PageDTO(page.getNumber(), page.getTotalElements(), page.getTotalPages());
+
+        return new ReferencePageDTO(dtoList, pageDTO);
+    }
+
+    // ===================== ENDPOINTS =====================
+
+    @Operation(summary = "Get paginated references of the authenticated user")
     @PostMapping("/GetAll")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferencePageDTO> getAll(
-
-            @Parameter(description = "Filter references by publication year", example = "2024")
-            @RequestParam( name = "year", required = false) String year,
-
-            @Parameter(description = "Filter references by title", example = "Machine Learning")
+            @RequestParam(name = "year", required = false) String year,
             @RequestParam(name = "title", required = false) String title,
-
-            @Parameter(description = "Page number", example = "0")
             @RequestParam(name = "page", defaultValue = "0") int page,
-
-            @Parameter(description = "Page size", example = "10")
             @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "sort", defaultValue = "id,desc", required = false) String sort) {
 
-            @Parameter(description = "Sorting options for reference")
-            @RequestBody(required = false) SortReference sort) {
-
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = userService.get(userDetails.getId());
-
-        Page<Reference> pageTuts = referenceService.getAll(user, year, title, page, size, sort);
-
-        if (pageTuts == null)
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-
-         else {
-            ReferencePageDTO referencePageDTO = getReferencePageDTO(pageTuts);
-            return ResponseEntity.ok().body(referencePageDTO);
+        SortReference sortReference = null;
+        if (sort != null) {
+            sortReference = SortReference.fromValue(sort);
         }
+
+        User user = getAuthenticatedUser();
+        Page<Reference> result = referenceService.getAll(user, year, title, page, size, sortReference);
+
+        if (result.getContent().isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+
+        return ResponseEntity.ok(buildPageDTO(result));
     }
 
     @Operation(summary = "Get a reference by ID")
     @GetMapping("/Get/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferenceDTO> getById(
-            @Parameter(
-                    name = "id",
-                    description = "Reference ID",
-                    example = "1",
-                    required = true,
-                    in = ParameterIn.PATH )
-            @PathVariable("id") final Integer id){
+                    @Parameter(description = "ID de la referencia", required = true)
+                    @PathVariable("id") Integer id)  {
 
-    UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = getAuthenticatedUser();
         Reference reference = referenceService.get(id);
 
-        if (verificateUser(userDetails.getId(), reference.getUser().getId())) {
-            ReferenceDTO referenceDTO = dtoConverter.toReferenceDTO(reference);
-            return ResponseEntity.ok().body(referenceDTO);
+        if (!isOwner(user.getId(), reference.getUser().getId())) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
-        } else return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        return ResponseEntity.ok(dtoConverter.toReferenceDTO(reference));
     }
 
     @Operation(summary = "Create a new reference")
     @PostMapping("/Add")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ReferenceDTO> add(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Reference information to create",
-                    required = true)
-            @RequestBody final ReferenceDTO referenceDTO) {
+    public ResponseEntity<ReferenceDTO> add(@RequestBody ReferenceDTO referenceDTO) {
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Reference reference = dtoConverter.createReference(referenceDTO, userService.get(userDetails.getId()));
+        User user = getAuthenticatedUser();
+        Reference reference = dtoConverter.createReference(referenceDTO, user);
 
-        if (reference != null) {
-            ReferenceDTO referenceDTOAdded = dtoConverter.toReferenceDTO(referenceService.add(reference));
-            return new ResponseEntity<>(referenceDTOAdded, HttpStatus.CREATED);
-
-        } else return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+        Reference saved = referenceService.add(reference);
+        return new ResponseEntity<>(dtoConverter.toReferenceDTO(saved), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Update an existing reference")
     @PutMapping("/Update")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ReferenceDTO> update(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Reference data to update",
-                    required = true)
-            @RequestBody final ReferenceDTO referenceDTO) {
+    public ResponseEntity<ReferenceDTO> update(@RequestBody ReferenceDTO referenceDTO) {
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        Reference reference = dtoConverter.toReference(referenceDTO, userService.get(userDetails.getId()));
+        User user = getAuthenticatedUser();
+        Reference reference = dtoConverter.toReference(referenceDTO, user);
 
-        if (reference != null) {
-            ReferenceDTO referenceDTOUpdated = dtoConverter.toReferenceDTO(referenceService.update(reference));
-            return new ResponseEntity<>(referenceDTOUpdated, HttpStatus.OK);
-
-        } else return new ResponseEntity<>(HttpStatus.NOT_MODIFIED);
+        Reference updated = referenceService.update(reference);
+        return ResponseEntity.ok(dtoConverter.toReferenceDTO(updated));
     }
 
-    @Operation(summary = "Delete a reference by ID")
+    @Operation(summary = "Delete a reference")
     @DeleteMapping("/Delete/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> delete(
-            @Parameter(
-                    name = "id",
-                    description = "Reference ID",
-                    example = "1",
-                    required = true,
-                    in = ParameterIn.PATH )
-            @PathVariable("id") final Integer id){
+            @Parameter(description = "ID de la referencia", required = true)
+            @PathVariable("id") Integer id) {
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = getAuthenticatedUser();
         Reference reference = referenceService.get(id);
 
-        if (verificateUser(userDetails.getId(), reference.getUser().getId())) {
-            referenceService.delete(id);
-            return ResponseEntity.ok().build();
-
-        } else return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-    }
-
-    @Operation(summary = "Delete multiple references by list of IDs")
-    @PostMapping("/DeleteGroup")
-    @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> deleteGroup(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "List of reference IDs to delete",
-                    required = true)
-            @RequestBody ArrayList<Integer> idList) {
-
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        ArrayList<Integer> newList = verificateUser(userDetails.getId(), idList);
-
-        for (Integer id : newList) {
-            referenceService.delete(id);
+        if (!isOwner(user.getId(), reference.getUser().getId())) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
+
+        referenceService.delete(id);
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Import references from a file")
+    @Operation(summary = "Delete multiple references")
+    @PostMapping("/DeleteGroup")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<?> deleteGroup(@RequestBody ArrayList<Integer> idList) {
+
+        User user = getAuthenticatedUser();
+        ArrayList<Integer> filtered = filterUserReferences(user.getId(), idList);
+
+        filtered.forEach(referenceService::delete);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Sync references")
     @PostMapping("/Sync")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferencePageDTO> sync(
-            @Parameter(description = "Filter by author", example = "Smith")
             @RequestParam(name = "author", required = false) String author,
-
-            @Parameter(description = "Filter by title", example = "Artificial Intelligence")
             @RequestParam(name = "title", required = false) String title,
-
-            @Parameter(description = "Page number", example = "0")
             @RequestParam(name = "page", defaultValue = "0") int page,
-
-            @Parameter(description = "Page size", example = "10")
             @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestBody ReferenceLibraryDTO library) {
 
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Reference library synchronization data",
-                    required = true)
-            @RequestBody final ReferenceLibraryDTO referenceLibrary) {
+        User user = getAuthenticatedUser();
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = userService.get(userDetails.getId());
+        List<Reference> newList = dtoConverter.toReferenceList(library.getNewReferencesList(), user);
+        List<Reference> updateList = dtoConverter.toReferenceList(library.getUpdatedReferencesList(), user);
 
-        List<Reference> newReferenceList = dtoConverter.toReferenceList(referenceLibrary.getNewReferencesList(), user);
-        List<Reference> updateReferenceList = dtoConverter.toReferenceList(referenceLibrary.getUpdatedReferencesList(), user);
+        referenceService.sync(newList, updateList, library.getDeletedReferencesList());
 
-        referenceService.sync(newReferenceList, updateReferenceList, referenceLibrary.getDeletedReferencesList());
+        Page<Reference> result = referenceService.getAll(user, author, title, page, size, library.getSortReference());
 
-        ReferencePageDTO referencePageDTO = getReferencePageDTO(referenceService.getAll(user, author, title, page, size, referenceLibrary.getSortReference()));
-
-        if (referencePageDTO == null)
+        if (result.getContent().isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
 
-        else return ResponseEntity.ok().body(referencePageDTO);
+        return ResponseEntity.ok(buildPageDTO(result));
     }
 
-    @Operation(summary = "Import references from a file")
-    @PreAuthorize("hasRole('USER')")
+    @Operation(summary = "Import references")
     @PostMapping(value = "/Import", consumes = {"multipart/form-data"})
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> importReferences(
+            @RequestParam (name = "format", defaultValue = "RIS") String format,
+            @RequestParam (name = "uploadFile") MultipartFile uploadFile) {
 
-            @Parameter(description = "Import format", example = "RIS OR BIBTEX")
-            @RequestParam("format") String format,
-
-            @Parameter(description = "File to upload")
-            @RequestParam("uploadFile") MultipartFile uploadFile) {
-
-        if (uploadFile.isEmpty())
-            return new ResponseEntity<>("You must select a file!", HttpStatus.OK);
+        if (uploadFile.isEmpty()) {
+            return ResponseEntity.badRequest().body("You must select a file!");
+        }
 
         try {
-            saveUploadedFiles(List.of(uploadFile));
+            saveUploadedFile(uploadFile);
 
-            UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            User user = userService.get(userDetails.getId());
-
+            User user = getAuthenticatedUser();
             File file = new File(UPLOADED_FOLDER, uploadFile.getOriginalFilename());
 
-            ArrayList<Reference> refereceList = referenceService.importReferences(file.getPath(), format);
-            for (Reference reference : refereceList) {
-                reference.setUser(user);
-                referenceService.add(reference);
+            ArrayList<Reference> list = referenceService.importReferences(file.getPath(), format);
+
+            for (Reference r : list) {
+                r.setUser(user);
+                referenceService.add(r);
             }
+
             file.delete();
-            return new ResponseEntity<>("Reference Imported!", HttpStatus.OK);
+
+            return ResponseEntity.ok("Reference Imported!");
 
         } catch (IOException | ParseException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-
     }
-    @Operation(summary = "Export references to a file")
-    @RequestMapping(path = "/Export", method = RequestMethod.POST)
+
+    @Operation(summary = "Export references")
+    @PostMapping("/Export")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Resource> exportReferences(
+            @RequestParam (name = "fileName", defaultValue = "file.txt") String fileName,
+            @RequestParam (name = "format", defaultValue = "RIS") String format,
+            @RequestBody ArrayList<Integer> idList) throws IOException {
 
-            @Parameter(description = "Name of the exported file", example = "references.txt")
-            @RequestParam("fileName") String fileName,
+        User user = getAuthenticatedUser();
+        ArrayList<Integer> filteredIds = filterUserReferences(user.getId(), idList);
 
-            @Parameter(description = "Export format", example = "RIS OR BIBTEX")
-            @RequestParam("format") String format,
-
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "List of reference IDs to export",
-                    required = true)
-            @RequestBody final ArrayList<Integer> idList) throws IOException {
-
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        ArrayList<Reference> referenceList = new ArrayList<>();
-
-        ArrayList<Integer> newIdList = verificateUser(userDetails.getId(), idList);
-        for (Integer id : newIdList) {
-            referenceList.add(referenceService.get(id));
+        ArrayList<Reference> references = new ArrayList<>();
+        for (Integer id : filteredIds) {
+            references.add(referenceService.get(id));
         }
 
         Path path = Paths.get(UPLOADED_FOLDER, fileName);
         Files.createDirectories(path.getParent());
+
         File file = new File(path.toString());
-
-        try {
-            referenceService.exportReferences(file, referenceList, format);
-        } catch (IOException e) {
-            throw new RuntimeException("Error exporting file", e);
-        }
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName);
-        headers.add("Cache-Control", "no-cache, no-store, must-revalidate");
-        headers.add("Pragma", "no-cache");
-        headers.add("Expires", "0");
+        referenceService.exportReferences(file, references, format);
 
         ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
+
+        file.delete();
+
         return ResponseEntity.ok()
-                .headers(headers)
-                .contentLength(file.length())
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                .contentLength(resource.contentLength())
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
     }
 
-    @Operation(summary = "Get references from all users (manager only)")
+    @Operation(summary = "Get references from all users")
     @PostMapping("/GetAllFromUsers")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ReferencePageDTO> getAllFromUsers(
-
-            @Parameter(description = "Filter references by publication year", example = "2024")
-            @RequestParam( name = "year", required = false) String year,
-
-            @Parameter(description = "Filter references by title", example = "Machine Learning")
+            @RequestParam(name = "year", required = false) String year,
             @RequestParam(name = "title", required = false) String title,
-
-            @Parameter(description = "Page number", example = "0")
             @RequestParam(name = "page", defaultValue = "0") int page,
-
-            @Parameter(description = "Page size", example = "10")
             @RequestParam(name = "size", defaultValue = "10") int size,
-
-            @Parameter(description = "Sorting options for reference")
             @RequestBody(required = false) SortReference sort) {
 
-        Page<Reference> pageTuts = referenceService.getAllFromUsers(year, title, page, size, sort);
+        Page<Reference> result = referenceService.getAllFromUsers(year, title, page, size, sort);
 
-        if (pageTuts == null)
+        if (result.getContent().isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        else {
-            ReferencePageDTO referencePageDTO = getReferencePageDTO(pageTuts);
-            return ResponseEntity.ok().body(referencePageDTO);
         }
+
+        return ResponseEntity.ok(buildPageDTO(result));
     }
 
-    private ReferencePageDTO getReferencePageDTO(Page<Reference> pageTuts) {
-        if (pageTuts.getContent().isEmpty())
-            return null;
+    // ===================== FILE HANDLING =====================
 
-        List<ReferenceDTO> referenceDTOList = dtoConverter.toReferenceDTOList(pageTuts.getContent());
-        PageDTO pageDTO = new PageDTO(pageTuts.getNumber(), pageTuts.getTotalElements(), pageTuts.getTotalPages());
+    private void saveUploadedFile(MultipartFile file) throws IOException {
+        String fileName = Optional.ofNullable(file.getOriginalFilename()).orElse("upload.tmp");
 
-        return new ReferencePageDTO(referenceDTOList, pageDTO);
-    }
+        fileName = Paths.get(fileName).getFileName().toString();
 
-    // save file
-    private void saveUploadedFiles(List<MultipartFile> files) throws IOException {
-
-        for (MultipartFile file : files) {
-            if (file.isEmpty())
-                continue;
-
-            String fileName = file.getOriginalFilename();
-
-            if (fileName == null || fileName.isBlank()) {
-                fileName = "upload.tmp";
-            }
-
-            fileName = Paths.get(fileName).getFileName().toString();
-            byte[] bytes = file.getBytes();
-            Path path = Paths.get(UPLOADED_FOLDER, fileName);
-
-            Files.createDirectories(path.getParent());
-            Files.write(path, bytes);
-        }
-    }
-
-    private boolean verificateUser(Integer userId, Integer referenceUserId) {
-        return Objects.equals(referenceUserId, userId);
-    }
-
-    private ArrayList<Integer> verificateUser(Integer userId, ArrayList<Integer> referenceId) {
-        ArrayList<Integer> idList = new ArrayList<>();
-
-        for (Integer id : referenceId) {
-            Reference reference = referenceService.get(id);
-            if (verificateUser(userId, reference.getUser().getId()))
-                idList.add(id);
-        }
-        return idList;
+        Path path = Paths.get(UPLOADED_FOLDER, fileName);
+        Files.createDirectories(path.getParent());
+        Files.write(path, file.getBytes());
     }
 }

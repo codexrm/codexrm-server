@@ -3,15 +3,17 @@ package io.github.codexrm.server.security.jwt;
 import io.github.codexrm.server.security.services.UserDetailsImpl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.SignatureAlgorithm;
-
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
@@ -22,15 +24,19 @@ public class JwtUtils {
     @Value("${codexrm.app.jwtSecret}")
     private String jwtSecret;
 
+    @Getter
     @Value("${codexrm.app.jwtExpirationMs}")
     private int jwtExpirationMs;
 
-    public int getJwtExpirationMs() {
-        return jwtExpirationMs;
+    @PostConstruct
+    public void validateSecret() {
+        if (jwtSecret == null || jwtSecret.length() < 64) {
+            throw new IllegalArgumentException("JWT secret must be at least 64 characters long for HS512");
+        }
     }
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateJwtToken(UserDetailsImpl userPrincipal) {
@@ -38,17 +44,15 @@ public class JwtUtils {
     }
 
     public String generateTokenFromUsername(String username) {
-
         return Jwts.builder()
                 .subject(username)
                 .issuedAt(new Date())
                 .expiration(new Date((new Date()).getTime() + jwtExpirationMs))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .signWith(getSigningKey())
                 .compact();
     }
 
     public String getUserNameFromJwtToken(String token) {
-
         Claims claims = Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
@@ -60,7 +64,6 @@ public class JwtUtils {
 
     public boolean validateJwtToken(String authToken) {
         try {
-
             Jwts.parser()
                     .verifyWith(getSigningKey())
                     .build()
@@ -68,7 +71,7 @@ public class JwtUtils {
 
             return true;
 
-        } catch (Exception e) {
+        } catch (JwtException | IllegalArgumentException e) {
             logger.error("Invalid JWT token: {}", e.getMessage());
         }
 
