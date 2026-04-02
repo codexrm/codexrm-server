@@ -96,3 +96,76 @@ Using JOINED ensures:
 - Maintainable and readable data model
 
 Performance impact is acceptable given the current system requirements.
+
+---
+
+# Transactional Boundaries and Isolation Levels
+
+## Context
+
+The system currently has limited usage of @Transactional annotations.
+
+A review of the codebase shows that @Transactional is only used in a few service classes (e.g., RefreshTokenService and UserDetailsServiceImpl), while most operations rely on default Spring Data JPA behavior.
+
+---
+
+## Current State
+
+- @Transactional is not consistently applied across service methods
+- Most CRUD operations rely on implicit transaction handling by Spring Data JPA
+- No clearly defined transactional strategy is present
+
+---
+
+## PostgreSQL Isolation Level
+
+PostgreSQL uses the default isolation level:
+
+READ COMMITTED
+
+### Characteristics:
+
+- Prevents dirty reads
+- Allows non-repeatable reads
+- Each query sees only committed data
+
+---
+
+## Analysis
+
+### Transactional usage
+
+Transactions are important when:
+- Multiple database operations must succeed or fail together
+- Data consistency is critical
+- Business logic spans multiple repository calls
+
+### Current system evaluation
+
+- Most operations are simple (single insert/update)
+- No complex multi-step transactional flows were identified
+- Current behavior is sufficient for existing use cases
+
+---
+
+## Potential Improvements
+
+- Apply @Transactional at the service layer for write operations
+- Ensure that future complex operations (e.g., batch processing or synchronization endpoints) are transactional
+- Avoid placing @Transactional in controllers (best practice)
+
+---
+
+## Decision
+
+Keep the current transactional setup, but recommend improving consistency by introducing @Transactional at the service layer where appropriate.
+
+---
+
+## Justification
+
+The system does not currently require advanced transaction management.
+
+PostgreSQL's default isolation level (READ COMMITTED) provides sufficient consistency for current operations.
+
+Introducing transactions selectively improves reliability without adding unnecessary complexity.
