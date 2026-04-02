@@ -1,6 +1,8 @@
 package io.github.codexrm.server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,6 +13,7 @@ public class UserPageDTO {
     private List<UserDTO> userDTOList;
 
     @Schema(description = "Pagination metadata associated with the user list")
+    @NotBlank
     private PageDTO pageDTO;
 
     public UserPageDTO() {

@@ -2,6 +2,7 @@ package io.github.codexrm.server.dto;
 
 import io.github.codexrm.server.enums.SortReference;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,7 @@ public class ReferenceLibraryDTO {
     private List<Integer> deletedReferencesList;
 
     @Schema( description = "Sorting configuration applied after synchronization")
+    @NotBlank
     private SortReference sortReference;
 
     public ReferenceLibraryDTO() {

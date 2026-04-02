@@ -105,7 +105,7 @@ public class UserController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> update(@PathVariable ("id") Integer id,
-                                          @RequestBody UserDTO userDTO) {
+                                          @Valid @RequestBody UserDTO userDTO) {
 
         User user = dtoConverter.toUser(userDTO);
         user.setId(id);
@@ -117,7 +117,7 @@ public class UserController {
     @Operation(summary = "Update password")
     @PutMapping("/password")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> updatePassword(@RequestBody UpdateUserPasswordRequest request) {
+    public ResponseEntity<?> updatePassword(@Valid @RequestBody UpdateUserPasswordRequest request) {
 
         UserDetailsImpl userDetails =
                 (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -141,7 +141,7 @@ public class UserController {
     @Operation(summary = "Update preferences")
     @PutMapping("/preferences")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<UserDTO> updatePreferences(@RequestBody UserDTO userDTO) {
+    public ResponseEntity<UserDTO> updatePreferences(@Valid @RequestBody UserDTO userDTO) {
 
         UserDetailsImpl userDetails =
                 (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -173,7 +173,7 @@ public class UserController {
     @Operation(summary = "Delete multiple users")
     @PostMapping("/delete-group")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> deleteGroup(@RequestBody List<Integer> ids) {
+    public ResponseEntity<?> deleteGroup(@Valid @RequestBody List<Integer> ids) {
 
         ids.forEach(userService::delete);
         return ResponseEntity.ok().build();

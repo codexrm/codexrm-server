@@ -1,14 +1,18 @@
 package io.github.codexrm.server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 @Schema(description = "Web page reference information")
 public class WebPageReferenceDTO extends ReferenceDTO {
 
     @Schema(description = "Author of the web page content", example = "Doe,John")
+    @Pattern(regexp = "^[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+,[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+[;(?=[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+,[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+)[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+,[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+]*")
     private String author;
 
     @Schema(description = "URL of the web page", example = "https://example.com/article")
+    @Pattern(regexp = "^https://.*")
     private String url;
 
     public WebPageReferenceDTO() {}

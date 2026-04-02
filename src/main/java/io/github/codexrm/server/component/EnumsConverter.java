@@ -6,93 +6,31 @@ public class EnumsConverter {
 
     public EnumsConverter() {}
 
-    public MonthsLibrary getMonthLibrary(String months) {
+    // ----------- MONTHS -----------
 
-        if (months != null) {
-            switch (months) {
-                case "jan":
-                    return MonthsLibrary.jan;
-                case "feb":
-                    return MonthsLibrary.feb;
-                case "mar":
-                    return MonthsLibrary.mar;
-                case "apr":
-                    return MonthsLibrary.apr;
-                case "may":
-                    return MonthsLibrary.may;
-                case "jun":
-                    return MonthsLibrary.jun;
-                case "jul":
-                    return MonthsLibrary.jul;
-                case "aug":
-                    return MonthsLibrary.aug;
-                case "sep":
-                    return MonthsLibrary.sep;
-                case "oct":
-                    return MonthsLibrary.oct;
-                case "nov":
-                    return MonthsLibrary.nov;
-                case "dec":
-                    return MonthsLibrary.dec;
-                default:
-                    return null;
-            }
-        } else {
+    public MonthsLibrary getMonthLibrary(String months) {
+        try {
+            return (months != null) ? MonthsLibrary.valueOf(months) : null;
+        } catch (IllegalArgumentException e) {
             return null;
         }
     }
 
     public String getMonth(MonthsLibrary months) {
-
-        if (months != null) {
-            switch (months) {
-                case jan:
-                    return "jan";
-                case feb:
-                    return "feb";
-                case mar:
-                    return "mar";
-                case apr:
-                    return "apr";
-                case may:
-                    return "may";
-                case jun:
-                    return "jun";
-                case jul:
-                    return "jul";
-                case aug:
-                    return "aug";
-                case sep:
-                    return "sep";
-                case oct:
-                    return "oct";
-                case nov:
-                    return "nov";
-                case dec:
-                    return "dec";
-                default:
-                    return null;
-            }
-        } else {
-            return null;
-        }
+        return (months != null) ? months.name() : null;
     }
+
+    // ----------- FORMAT -----------
 
     public FormatLibrary getFormat(String format) {
-
-        if (format != null) {
-            switch (format) {
-                case "RIS":
-                    return FormatLibrary.RIS;
-                case "BIBTEX":
-                    return FormatLibrary.BIBTEX;
-                default:
-                    return null;
-            }
-        } else {
+        try {
+            return (format != null) ? FormatLibrary.valueOf(format) : null;
+        } catch (IllegalArgumentException e) {
             return null;
         }
     }
+
+    // ----------- BOOK SECTION TYPE (SE DEJA CON SWITCH PARA NO ROMPER) -----------
 
     public BookSectionTypeLibrary getBookSectionTypeLibrary(String type) {
 
@@ -150,35 +88,17 @@ public class EnumsConverter {
         }
     }
 
-    public ThesisTypeLibrary getThesisTypeLibrary(String type) {
+    // ----------- THESIS TYPE -----------
 
-        if (type != null) {
-            switch (type) {
-                case "MASTERS":
-                    return ThesisTypeLibrary.MASTERS;
-                case "PHD":
-                    return ThesisTypeLibrary.PHD;
-                default:
-                    return null;
-            }
-        } else {
+    public ThesisTypeLibrary getThesisTypeLibrary(String type) {
+        try {
+            return (type != null) ? ThesisTypeLibrary.valueOf(type) : null;
+        } catch (IllegalArgumentException e) {
             return null;
         }
     }
 
     public String getThesisType(ThesisTypeLibrary type) {
-
-        if (type != null) {
-            switch (type) {
-                case MASTERS:
-                    return "MASTERS";
-                case PHD:
-                    return "PHD";
-                default:
-                    return null;
-            }
-        } else {
-            return null;
-        }
+        return (type != null) ? type.name() : null;
     }
 }

@@ -1,17 +1,25 @@
 package io.github.codexrm.server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 @Schema(description = "Book section reference information")
 public class BookSectionReferenceDTO extends BookReferenceDTO {
 
     @Schema(description = "Chapter of the book where the section appears", example = "5")
+    @NotBlank
+    @Pattern(regexp = "^$|[\\d]*")
     private String chapter;
 
     @Schema(description = "Page range of the section", example = "120-135")
+    @NotBlank
+    @Pattern(regexp = "[IVXMLCD]+|[IVXMLCD]+,[IVXMLCD]+|[IVXMLCD]+-[IVXMLCD]+|[0-9]+|[0-9]+,[0-9]+|[0-9]+-[0-9]+")
     private String pages;
 
-    @Schema(description = "Type of section (e.g., chapter, appendix)", example = "chapter")
+    @Schema(description = "Type of section (e.g., MATHESIS, PHDTHESIS)", example = "chapter")
+    @Pattern(regexp = "^(?i)(MATHESIS|PHDTHESIS|CANDTHESIS|TECHREPORT|RESREPORT|SOFTWARE|AUDIOCD|DataCD)$",
+            message = "Invalid type")
     private String type;
 
     public BookSectionReferenceDTO() {}

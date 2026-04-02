@@ -3,6 +3,8 @@ package io.github.codexrm.server.dto;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "referenceType")
 @JsonSubTypes({
@@ -23,9 +25,11 @@ public class ReferenceDTO {
     protected String title;
 
     @Schema(description = "Year of publication", example = "2016 or 2020--2021")
+    @Pattern(regexp = "\\d{4}|\\d{4}--\\d{4}")
     protected String year;
 
     @Schema(description = "Month of publication", example = "July")
+    @Pattern(regexp = "^(?i)(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$")
     protected String month;
 
     @Schema(description = "Additional notes about the reference", example = "Second edition")
