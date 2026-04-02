@@ -1,6 +1,9 @@
 package io.github.codexrm.server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -11,15 +14,24 @@ public class UserDTO {
     private Integer id;
 
     @Schema(description = "Username of the user", example = "marynes")
+    @NotBlank
+    @Size(min = 3, max = 20)
     private String username;
 
     @Schema(description = "First name of the user", example = "Marynes")
+    @NotBlank
+    @Size(max = 20)
     private String name;
 
     @Schema(description = "Last name of the user", example = "Diaz")
+    @NotBlank
+    @Size(max = 20)
     private String lastName;
 
     @Schema(description = "Email address of the user", example = "marynes@email.com")
+    @NotBlank
+    @Size(max = 50)
+    @Email
     private String email;
 
     @Schema(description = "Indicates whether the user account is enabled", example = "true")

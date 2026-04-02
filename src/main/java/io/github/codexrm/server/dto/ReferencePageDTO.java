@@ -1,6 +1,7 @@
 package io.github.codexrm.server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 
 import java.util.List;
 
@@ -11,6 +12,7 @@ public class ReferencePageDTO {
     private List<ReferenceDTO> referenceDTOList;
 
     @Schema(description = "Pagination metadata associated with the reference list")
+    @NotBlank
     private PageDTO pageDTO;
 
     public ReferencePageDTO() {}

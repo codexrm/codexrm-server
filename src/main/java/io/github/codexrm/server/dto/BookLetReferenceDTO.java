@@ -1,17 +1,20 @@
 package io.github.codexrm.server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Pattern;
 
 @Schema(description = "Booklet reference information")
 public class BookLetReferenceDTO extends ReferenceDTO {
 
     @Schema(description = "Author of the booklet", example = "Smith,John")
+    @Pattern(regexp = "^[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+,[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+[;(?=[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+,[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+)[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+,[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+]*")
     private String author;
 
     @Schema(description = "How the booklet was published", example = "Online publication")
     private String howpublished;
 
     @Schema(description = "Publication address or location", example = "New York, USA")
+    @Pattern(regexp = "^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\\s]*[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+,\\s[[A-Za-záéíóúüñÁÉÍÓÚÜÑ]+]*")
     private String address;
 
     public BookLetReferenceDTO() {}

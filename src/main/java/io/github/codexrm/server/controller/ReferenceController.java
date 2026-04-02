@@ -14,6 +14,7 @@ import io.github.codexrm.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.jbibtex.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
@@ -136,7 +137,7 @@ public class ReferenceController {
     @Operation(summary = "Create a new reference")
     @PostMapping("/Add")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ReferenceDTO> add(@RequestBody ReferenceDTO referenceDTO) {
+    public ResponseEntity<ReferenceDTO> add(@Valid @RequestBody ReferenceDTO referenceDTO) {
 
         User user = getAuthenticatedUser();
         Reference reference = dtoConverter.createReference(referenceDTO, user);
@@ -148,7 +149,7 @@ public class ReferenceController {
     @Operation(summary = "Update an existing reference")
     @PutMapping("/Update")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ReferenceDTO> update(@RequestBody ReferenceDTO referenceDTO) {
+    public ResponseEntity<ReferenceDTO> update(@Valid @RequestBody ReferenceDTO referenceDTO) {
 
         User user = getAuthenticatedUser();
         Reference reference = dtoConverter.toReference(referenceDTO, user);
@@ -178,7 +179,7 @@ public class ReferenceController {
     @Operation(summary = "Delete multiple references")
     @PostMapping("/DeleteGroup")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<?> deleteGroup(@RequestBody ArrayList<Integer> idList) {
+    public ResponseEntity<?> deleteGroup(@Valid @RequestBody ArrayList<Integer> idList) {
 
         User user = getAuthenticatedUser();
         ArrayList<Integer> filtered = filterUserReferences(user.getId(), idList);
@@ -196,7 +197,7 @@ public class ReferenceController {
             @RequestParam(name = "title", required = false) String title,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size,
-            @RequestBody ReferenceLibraryDTO library) {
+            @Valid @RequestBody ReferenceLibraryDTO library) {
 
         User user = getAuthenticatedUser();
 
@@ -253,7 +254,7 @@ public class ReferenceController {
     public ResponseEntity<Resource> exportReferences(
             @RequestParam (name = "fileName", defaultValue = "file.txt") String fileName,
             @RequestParam (name = "format", defaultValue = "RIS") String format,
-            @RequestBody ArrayList<Integer> idList) throws IOException {
+            @Valid @RequestBody ArrayList<Integer> idList) throws IOException {
 
         User user = getAuthenticatedUser();
         ArrayList<Integer> filteredIds = filterUserReferences(user.getId(), idList);
@@ -288,7 +289,7 @@ public class ReferenceController {
             @RequestParam(name = "title", required = false) String title,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size,
-            @RequestBody(required = false) SortReference sort) {
+            @Valid @RequestBody(required = false) SortReference sort) {
 
         Page<Reference> result = referenceService.getAllFromUsers(year, title, page, size, sort);
 
