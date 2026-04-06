@@ -8,11 +8,16 @@ import io.github.codexrm.server.enums.SortUser;
 import io.github.codexrm.server.model.User;
 import io.github.codexrm.server.payload.request.AddUserRequest;
 import io.github.codexrm.server.payload.request.UpdateUserPasswordRequest;
+import io.github.codexrm.server.payload.response.ErrorResponse;
 import io.github.codexrm.server.payload.response.MessageResponse;
 import io.github.codexrm.server.security.services.UserDetailsImpl;
 import io.github.codexrm.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -50,10 +55,7 @@ public class UserController {
             @RequestParam(name = "size", defaultValue = "5") int size,
             @RequestParam(name = "sort", required = false) String sort) {
 
-        SortUser sortUser = null;
-        if (sort != null) {
-            sortUser = SortUser.fromValue(sort);
-        }
+        SortUser sortUser = sort != null ? SortUser.fromValue(sort) : null;
 
         Page<User> users = userService.getAll(username, page, size, sortUser);
 
@@ -64,6 +66,13 @@ public class UserController {
     }
 
     @Operation(summary = "Get user by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User found"),
+            @ApiResponse(responseCode = "403", description = "Forbidden",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER') or hasRole('AUDITOR')")
     public ResponseEntity<UserDTO> getById(
@@ -81,11 +90,18 @@ public class UserController {
     }
 
     @Operation(summary = "Create a new user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User created"),
+            @ApiResponse(responseCode = "400", description = "Invalid request",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Duplicate user",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> add(@Valid @RequestBody AddUserRequest request) {
 
-        userService.validateUser(request.getUsername(), request.getEmail());
+        userService.validateUniqueUser(request.getUsername(), request.getEmail());
 
         User user = new User(
                 request.getUsername(),
@@ -102,6 +118,11 @@ public class UserController {
     }
 
     @Operation(summary = "Update user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User updated"),
+            @ApiResponse(responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> update(@PathVariable ("id") Integer id,
@@ -115,6 +136,11 @@ public class UserController {
     }
 
     @Operation(summary = "Update password")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Password updated"),
+            @ApiResponse(responseCode = "400", description = "Invalid password",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @PutMapping("/password")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> updatePassword(@Valid @RequestBody UpdateUserPasswordRequest request) {
@@ -125,11 +151,11 @@ public class UserController {
         User user = userService.get(userDetails.getId());
 
         if (!encoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Current password incorrect"));
+            throw new IllegalArgumentException("Current password incorrect");
         }
 
         if (!request.getNewPassword().equals(request.getConfirmationPassword())) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Passwords do not match"));
+            throw new IllegalArgumentException("Passwords do not match");
         }
 
         user.setPassword(encoder.encode(request.getNewPassword()));
@@ -139,6 +165,11 @@ public class UserController {
     }
 
     @Operation(summary = "Update preferences")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Preferences updated"),
+            @ApiResponse(responseCode = "403", description = "Forbidden",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @PutMapping("/preferences")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<UserDTO> updatePreferences(@Valid @RequestBody UserDTO userDTO) {
@@ -160,6 +191,11 @@ public class UserController {
     }
 
     @Operation(summary = "Delete user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User deleted"),
+            @ApiResponse(responseCode = "404", description = "User not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> delete(

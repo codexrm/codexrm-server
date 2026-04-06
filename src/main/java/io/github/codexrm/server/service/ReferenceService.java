@@ -3,20 +3,16 @@ package io.github.codexrm.server.service;
 import io.github.codexrm.server.component.ExportR;
 import io.github.codexrm.server.component.ImportR;
 import io.github.codexrm.server.enums.SortReference;
+import io.github.codexrm.server.exception.DuplicateResourceException;
 import io.github.codexrm.server.exception.ResourceNotFoundException;
 import io.github.codexrm.server.model.Reference;
 import io.github.codexrm.server.model.User;
 import io.github.codexrm.server.repository.ReferenceRepository;
 import org.jbibtex.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
-import jakarta.persistence.EntityExistsException;
-import jakarta.persistence.EntityNotFoundException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -57,37 +53,44 @@ public class ReferenceService {
 
     public Reference get(Integer id) {
         return referenceRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Reference not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Reference", "id", id));
     }
 
     public Reference add(Reference reference) {
-        if (reference.getId() != null && referenceRepository.existsById(reference.getId()))
-            throw new EntityExistsException("There is already existing entity with such ID in the database.");
+
+        if (reference.getId() != null && referenceRepository.existsById(reference.getId())) {
+            throw new DuplicateResourceException("Reference", "id", reference.getId());
+        }
 
         return referenceRepository.save(reference);
     }
 
     public Reference update(Reference reference) {
-        if (reference.getId() != null && !referenceRepository.existsById(reference.getId()))
-            throw new EntityNotFoundException("There is no entity with such ID in the database.");
+
+        if (reference.getId() == null) {
+            throw new ResourceNotFoundException("Reference", "id", null);
+        }
+
+        get(reference.getId());
 
         return referenceRepository.save(reference);
     }
 
     public void delete(Integer id) {
-        if (!referenceRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Reference not found with id " + id);
-        }
-        referenceRepository.deleteById(id);
+        Reference reference = get(id);
+        referenceRepository.delete(reference);
     }
 
     public void sync(List<Reference> newReferenceList, List<Reference> updateReferenceList, List<Integer> deleteReferenceList) {
+
         for (Reference reference : newReferenceList) {
             add(reference);
         }
+
         for (Reference reference : updateReferenceList) {
             update(reference);
         }
+
         for (Integer id : deleteReferenceList) {
             delete(id);
         }
@@ -125,6 +128,7 @@ public class ReferenceService {
         if (sort == null) {
             return new Sort.Order(Sort.Direction.ASC, "id");
         }
+
         return switch (sort) {
             case idAsc -> Sort.Order.asc("id");
             case idDesc -> Sort.Order.desc("id");

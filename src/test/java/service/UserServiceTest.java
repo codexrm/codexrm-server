@@ -160,7 +160,7 @@ class UserServiceTest {
         when(userRepository.existsByUsername("john")).thenReturn(true);
 
         assertThrows(RuntimeException.class, () ->
-                userService.validateUser("john", "email@test.com"));
+                userService.validateUniqueUser("john", "email@test.com"));
     }
 
     @Test
@@ -169,7 +169,7 @@ class UserServiceTest {
         when(userRepository.existsByEmail("email@test.com")).thenReturn(true);
 
         assertThrows(RuntimeException.class, () ->
-                userService.validateUser("john", "email@test.com"));
+                userService.validateUniqueUser("john", "email@test.com"));
     }
 
     @Test
@@ -178,6 +178,6 @@ class UserServiceTest {
         when(userRepository.existsByEmail("email@test.com")).thenReturn(false);
 
         assertDoesNotThrow(() ->
-                userService.validateUser("john", "email@test.com"));
+                userService.validateUniqueUser("john", "email@test.com"));
     }
 }
