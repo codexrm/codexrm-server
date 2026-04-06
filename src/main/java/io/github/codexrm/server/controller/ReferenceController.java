@@ -8,11 +8,17 @@ import io.github.codexrm.server.dto.ReferencePageDTO;
 import io.github.codexrm.server.enums.SortReference;
 import io.github.codexrm.server.model.Reference;
 import io.github.codexrm.server.model.User;
+import io.github.codexrm.server.payload.response.ErrorResponse;
+import io.github.codexrm.server.payload.response.MessageResponse;
 import io.github.codexrm.server.security.services.UserDetailsImpl;
 import io.github.codexrm.server.service.ReferenceService;
 import io.github.codexrm.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.jbibtex.ParseException;
@@ -118,6 +124,13 @@ public class ReferenceController {
     }
 
     @Operation(summary = "Get a reference by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Reference found"),
+            @ApiResponse(responseCode = "403", description = "Forbidden",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Reference not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @GetMapping("/Get/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferenceDTO> getById(
@@ -135,6 +148,11 @@ public class ReferenceController {
     }
 
     @Operation(summary = "Create a new reference")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Reference created"),
+            @ApiResponse(responseCode = "400", description = "Invalid request",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @PostMapping("/Add")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferenceDTO> add(@Valid @RequestBody ReferenceDTO referenceDTO) {
@@ -159,6 +177,13 @@ public class ReferenceController {
     }
 
     @Operation(summary = "Delete a reference")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Deleted successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Reference not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @DeleteMapping("/Delete/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> delete(
@@ -190,6 +215,12 @@ public class ReferenceController {
     }
 
     @Operation(summary = "Sync references")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Synchronization successful"),
+            @ApiResponse(responseCode = "204", description = "No content after sync"),
+            @ApiResponse(responseCode = "400", description = "Invalid request",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @PostMapping("/Sync")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferencePageDTO> sync(
@@ -216,37 +247,38 @@ public class ReferenceController {
     }
 
     @Operation(summary = "Import references")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Import successful"),
+            @ApiResponse(responseCode = "400", description = "Invalid file or format",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     @PostMapping(value = "/Import", consumes = {"multipart/form-data"})
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> importReferences(
             @RequestParam (name = "format", defaultValue = "RIS") String format,
-            @RequestParam (name = "uploadFile") MultipartFile uploadFile) {
+            @RequestParam (name = "uploadFile") MultipartFile uploadFile) throws IOException, ParseException{
 
         if (uploadFile.isEmpty()) {
-            return ResponseEntity.badRequest().body("You must select a file!");
+            throw new IllegalArgumentException("You must select a file!");
         }
 
-        try {
-            saveUploadedFile(uploadFile);
+        saveUploadedFile(uploadFile);
 
-            User user = getAuthenticatedUser();
-            File file = new File(UPLOADED_FOLDER, uploadFile.getOriginalFilename());
+        User user = getAuthenticatedUser();
+        File file = new File(UPLOADED_FOLDER, uploadFile.getOriginalFilename());
 
-            ArrayList<Reference> list = referenceService.importReferences(file.getPath(), format);
+        ArrayList<Reference> list = referenceService.importReferences(file.getPath(), format);
 
-            for (Reference r : list) {
-                r.setUser(user);
-                referenceService.add(r);
-            }
-
-            file.delete();
-
-            return ResponseEntity.ok("Reference Imported!");
-
-        } catch (IOException | ParseException e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        for (Reference r : list) {
+            r.setUser(user);
+            referenceService.add(r);
         }
+
+        file.delete();
+
+        return ResponseEntity.ok(new MessageResponse("Reference Imported!"));
     }
+
 
     @Operation(summary = "Export references")
     @PostMapping("/Export")
