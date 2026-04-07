@@ -4,6 +4,7 @@ import io.github.codexrm.server.component.ExportR;
 import io.github.codexrm.server.component.ImportR;
 import io.github.codexrm.server.enums.SortReference;
 import io.github.codexrm.server.exception.DuplicateResourceException;
+import io.github.codexrm.server.exception.InvalidOperationException;
 import io.github.codexrm.server.exception.ResourceNotFoundException;
 import io.github.codexrm.server.model.Reference;
 import io.github.codexrm.server.model.User;
@@ -120,6 +121,13 @@ public class ReferenceService {
 
         } else {
             return referenceRepository.findByYearContainingAndTitleContaining(year, title, pagingSort);
+        }
+    }
+
+    public void validateOwnership(Integer userId, Reference reference) {
+
+        if (!reference.getUser().getId().equals(userId)) {
+            throw new InvalidOperationException("You do not have permission to access this resource");
         }
     }
 
