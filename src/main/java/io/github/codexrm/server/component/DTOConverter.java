@@ -8,7 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class DTOConverter {
@@ -17,11 +19,32 @@ public class DTOConverter {
     private final RoleService roleService;
     private final ValidateReference validation;
 
+    /**
+     * Registry pattern for mapping Reference entities to their corresponding DTOs.
+     * This replaces the previous if-else chain to improve scalability and maintainability.
+     * New mappings can be added without modifying the conversion logic.
+     */
+    private final Map<Class<?>, Class<? extends ReferenceDTO>> referenceDTOMap = new HashMap<>();
+
     @Autowired
     public DTOConverter(ModelMapper modelMapper, RoleService roleService) {
         this.modelMapper = modelMapper;
         this.roleService = roleService;
         this.validation = new ValidateReference();
+
+        initReferenceMap();
+    }
+
+    private void initReferenceMap() {
+
+        referenceDTOMap.put(ArticleReference.class, ArticleReferenceDTO.class);
+        referenceDTOMap.put(BookSectionReference.class, BookSectionReferenceDTO.class);
+        referenceDTOMap.put(BookReference.class, BookReferenceDTO.class);
+        referenceDTOMap.put(BookLetReference.class, BookLetReferenceDTO.class);
+        referenceDTOMap.put(ConferenceProceedingReference.class, ConferenceProceedingsReferenceDTO.class);
+        referenceDTOMap.put(ConferencePaperReference.class, ConferencePaperReferenceDTO.class);
+        referenceDTOMap.put(WebPageReference.class, WebPageReferenceDTO.class);
+        referenceDTOMap.put(ThesisReference.class, ThesisReferenceDTO.class);
     }
 
     // =========================
@@ -30,30 +53,16 @@ public class DTOConverter {
 
     public ReferenceDTO toReferenceDTO(final Reference reference) {
 
-        if (reference instanceof ArticleReference) {
-            return modelMapper.map(reference, ArticleReferenceDTO.class);
+        Class<? extends ReferenceDTO> dtoClass =
+                referenceDTOMap.get(reference.getClass());
 
-        } else if (reference instanceof BookSectionReference) {
-            return modelMapper.map(reference, BookSectionReferenceDTO.class);
-
-        } else if (reference instanceof BookReference) {
-            return modelMapper.map(reference, BookReferenceDTO.class);
-
-        } else if (reference instanceof BookLetReference) {
-            return modelMapper.map(reference, BookLetReferenceDTO.class);
-
-        } else if (reference instanceof ConferenceProceedingReference) {
-            return modelMapper.map(reference, ConferenceProceedingsReferenceDTO.class);
-
-        } else if (reference instanceof ConferencePaperReference) {
-            return modelMapper.map(reference, ConferencePaperReferenceDTO.class);
-
-        } else if (reference instanceof WebPageReference) {
-            return modelMapper.map(reference, WebPageReferenceDTO.class);
-
-        } else {
-            return modelMapper.map(reference, ThesisReferenceDTO.class);
+        if (dtoClass == null) {
+            throw new IllegalArgumentException(
+                    "No DTO mapping found for " + reference.getClass().getSimpleName()
+            );
         }
+
+        return modelMapper.map(reference, dtoClass);
     }
 
     public Reference toReference(final ReferenceDTO referenceDTO, User user) {
