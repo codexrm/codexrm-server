@@ -1,9 +1,8 @@
 package io.github.codexrm.server.component;
 
 import io.github.codexrm.server.dto.*;
-import io.github.codexrm.server.enums.ERole;
 import io.github.codexrm.server.model.*;
-import io.github.codexrm.server.repository.RoleRepository;
+import io.github.codexrm.server.service.RoleService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -15,13 +14,13 @@ import java.util.List;
 public class DTOConverter {
 
     private final ModelMapper modelMapper;
-    private final RoleRepository roleRepository;
+    private final RoleService roleService;
     private final ValidateReference validation;
 
     @Autowired
-    public DTOConverter(ModelMapper modelMapper, RoleRepository roleRepository) {
+    public DTOConverter(ModelMapper modelMapper, RoleService roleService) {
         this.modelMapper = modelMapper;
-        this.roleRepository = roleRepository;
+        this.roleService = roleService;
         this.validation = new ValidateReference();
     }
 
@@ -163,35 +162,7 @@ public class DTOConverter {
 
         User user = modelMapper.map(userDTO, User.class);
         user.getRoles().clear();
-
-        for (String role : userDTO.getRoles()) {
-            user.setRole(getRole(role));
-        }
-
+        user.setRoles(roleService.resolveRoles(userDTO.getRoles()));
         return user;
-    }
-
-    // =========================
-    // ====== HELPERS ==========
-    // =========================
-
-    private Role getRole(String role) {
-        return switch (role) {
-            case "ROLE_ADMIN" ->
-                    roleRepository.findByName(ERole.ROLE_ADMIN)
-                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-
-            case "ROLE_MANAGER" ->
-                    roleRepository.findByName(ERole.ROLE_MANAGER)
-                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-
-            case "ROLE_AUDITOR" ->
-                    roleRepository.findByName(ERole.ROLE_AUDITOR)
-                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-
-            default ->
-                    roleRepository.findByName(ERole.ROLE_USER)
-                            .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-        };
     }
 }
