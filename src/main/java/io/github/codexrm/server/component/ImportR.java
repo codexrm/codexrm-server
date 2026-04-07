@@ -8,6 +8,7 @@ import org.jbibtex.TokenMgrException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 public class ImportR {
 
@@ -26,51 +27,43 @@ public class ImportR {
 
         ArrayList<BaseR> list = manager.importReferences(path, enumsConverter.getFormat(format));
 
-        for (BaseR entry : list) {
-            Reference reference = createReference(entry);
-            if(reference != null)
-                referenceList.add(reference);
-        }
-        return referenceList;
+        return list.stream()
+                .map(this::createReference)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     private Reference createReference(BaseR entry) {
 
-        Reference reference;
-        if (entry instanceof ArticleR) {
-            reference = readArticleReference((ArticleR) entry);
-        } else {
-            if (entry instanceof BookSectionR) {
-                reference = readBookSectionReference((BookSectionR) entry);
-            } else {
-                if (entry instanceof BookR) {
-                    reference = readBookReference((BookR) entry);
-                } else {
-                    if (entry instanceof ThesisR) {
-                        reference = readThesisReference((ThesisR) entry);
-                    } else {
-                        if (entry instanceof ConferenceProceedingsR) {
-                            reference = readConferenceProceedingsReference((ConferenceProceedingsR) entry);
-                        } else {
-                            if (entry instanceof ConferencePaperR) {
-                                reference = readConferencePaperReference((ConferencePaperR) entry);
-                            } else {
-                                if (entry instanceof WebPageR) {
-                                    reference = readWebPageReference((WebPageR) entry);
-                                } else {
-                                    if (entry instanceof BookLetR) {
-                                        reference = readBookLetReference((BookLetR) entry);
-                                    } else {
-                                        reference = null;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return reference;
+        return switch (entry) {
+            case ArticleR article ->
+                    readArticleReference(article);
+
+            case BookSectionR section ->
+                    readBookSectionReference(section);
+
+            case BookR book ->
+                    readBookReference(book);
+
+            case ThesisR thesis ->
+                    readThesisReference(thesis);
+
+            case ConferenceProceedingsR proceedings ->
+                    readConferenceProceedingsReference(proceedings);
+
+            case ConferencePaperR paper ->
+                    readConferencePaperReference(paper);
+
+            case WebPageR web ->
+                    readWebPageReference(web);
+
+            case BookLetR let ->
+                    readBookLetReference(let);
+
+            default ->
+                    throw new IllegalArgumentException(
+                            "Unsupported reference type: " + entry.getClass().getSimpleName()
+                    );
+        };
     }
 
     private void commonField(BaseR entry, Reference reference) {
