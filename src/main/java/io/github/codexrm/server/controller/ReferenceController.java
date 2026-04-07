@@ -6,6 +6,7 @@ import io.github.codexrm.server.dto.ReferenceDTO;
 import io.github.codexrm.server.dto.ReferenceLibraryDTO;
 import io.github.codexrm.server.dto.ReferencePageDTO;
 import io.github.codexrm.server.enums.SortReference;
+import io.github.codexrm.server.exception.InvalidOperationException;
 import io.github.codexrm.server.model.Reference;
 import io.github.codexrm.server.model.User;
 import io.github.codexrm.server.payload.response.ErrorResponse;
@@ -71,17 +72,15 @@ public class ReferenceController {
         return userService.get(userDetails.getId());
     }
 
-    private boolean isOwner(Integer userId, Integer referenceUserId) {
-        return Objects.equals(referenceUserId, userId);
-    }
-
     private ArrayList<Integer> filterUserReferences(Integer userId, ArrayList<Integer> referenceIds) {
         ArrayList<Integer> filtered = new ArrayList<>();
 
         for (Integer id : referenceIds) {
             Reference reference = referenceService.get(id);
-            if (isOwner(userId, reference.getUser().getId())) {
+            try {
+                referenceService.validateOwnership(userId, reference);
                 filtered.add(id);
+            } catch (InvalidOperationException ignored) {
             }
         }
         return filtered;
@@ -140,9 +139,7 @@ public class ReferenceController {
         User user = getAuthenticatedUser();
         Reference reference = referenceService.get(id);
 
-        if (!isOwner(user.getId(), reference.getUser().getId())) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
+        referenceService.validateOwnership(user.getId(), reference);
 
         return ResponseEntity.ok(dtoConverter.toReferenceDTO(reference));
     }
@@ -193,9 +190,7 @@ public class ReferenceController {
         User user = getAuthenticatedUser();
         Reference reference = referenceService.get(id);
 
-        if (!isOwner(user.getId(), reference.getUser().getId())) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
+        referenceService.validateOwnership(user.getId(), reference);
 
         referenceService.delete(id);
         return ResponseEntity.ok().build();

@@ -1,14 +1,20 @@
 package io.github.codexrm.server.service;
 
+import io.github.codexrm.server.component.DTOConverter;
+import io.github.codexrm.server.dto.UserDTO;
 import io.github.codexrm.server.enums.SortUser;
 import io.github.codexrm.server.exception.DuplicateResourceException;
 import io.github.codexrm.server.exception.InvalidOperationException;
 import io.github.codexrm.server.exception.ResourceNotFoundException;
 import io.github.codexrm.server.model.Role;
 import io.github.codexrm.server.model.User;
+import io.github.codexrm.server.payload.request.AddUserRequest;
+import io.github.codexrm.server.payload.request.SignupRequest;
+import io.github.codexrm.server.payload.request.UpdateUserPasswordRequest;
 import io.github.codexrm.server.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,11 +25,15 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final RoleService roleService;
+    private final PasswordEncoder passwordEncoder;
+    private final DTOConverter dtoConverter;
 
     @Autowired
-    public UserService(final UserRepository userRepository, RoleService roleService) {
+    public UserService(final UserRepository userRepository, RoleService roleService, PasswordEncoder passwordEncoder, DTOConverter dtoConverter) {
         this.userRepository = userRepository;
         this.roleService = roleService;
+        this.passwordEncoder = passwordEncoder;
+        this.dtoConverter = dtoConverter;
     }
 
     public Page<User> getAll(String username, int page, int size, SortUser sort) {
@@ -48,8 +58,52 @@ public class UserService {
         return user.getPassword();
     }
 
-    public User add(User user) {
-        return userRepository.save(user);
+    public User add(User user) {return userRepository.save(user);}
+
+    public User createUser(AddUserRequest request) {
+
+        validateUniqueUser(request.getUsername(), request.getEmail());
+
+        User user = new User(
+                request.getUsername(),
+                request.getName(),
+                request.getLastName(),
+                request.getEmail(),
+                request.isEnabled(),
+                passwordEncoder.encode(request.getPassword())
+        );
+
+        return createUserAccount(user, false, request.getRoles());
+    }
+
+    public User createUserAccount(User user, boolean isUser, List<String> roleList) {
+
+        Set<Role> roles;
+
+        if (isUser) {
+            roles = roleService.resolveRoles(List.of("ROLE_USER"));
+        } else {
+            roles = roleService.resolveRoles(roleList);
+        }
+
+        user.setRoles(roles);
+        return add(user);
+    }
+
+    public User registerUser(SignupRequest request) {
+
+        validateUniqueUser(request.getUsername(), request.getEmail());
+
+        User user = new User(
+                request.getUsername(),
+                request.getName(),
+                request.getLastName(),
+                request.getEmail(),
+                request.isEnabled(),
+                passwordEncoder.encode(request.getPassword())
+        );
+
+        return createUserAccount(user, true, null);
     }
 
     public User update(User user) {
@@ -61,6 +115,38 @@ public class UserService {
         get(user.getId());
 
         return userRepository.save(user);
+    }
+
+    public void updatePassword(Integer userId, UpdateUserPasswordRequest request) {
+
+        User user = get(userId);
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Current password incorrect");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmationPassword())) {
+            throw new IllegalArgumentException("Passwords do not match");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        update(user);
+    }
+
+    public User updatePreferences(Integer authenticatedUserId, UserDTO userDTO) {
+
+        if (!authenticatedUserId.equals(userDTO.getId())) {
+            throw new InvalidOperationException("You can only update your own preferences");
+        }
+
+        User existingUser = get(userDTO.getId());
+
+        User user = dtoConverter.toUser(userDTO);
+
+        user.setRoles(existingUser.getRoles());
+        user.setPassword(existingUser.getPassword());
+
+        return update(user);
     }
 
     public void delete(Integer id) {
@@ -77,20 +163,6 @@ public class UserService {
         if (userRepository.existsByEmail(email)) {
             throw new DuplicateResourceException("User", "email", email);
         }
-    }
-
-    public User createUserAccount(User user, boolean isUser, List<String> roleList) {
-
-        Set<Role> roles;
-
-        if (isUser) {
-            roles = roleService.resolveRoles(List.of("ROLE_USER"));
-        } else {
-            roles = roleService.resolveRoles(roleList);
-        }
-
-        user.setRoles(roles);
-        return add(user);
     }
 
     private Sort.Order getOrder(SortUser sort) {

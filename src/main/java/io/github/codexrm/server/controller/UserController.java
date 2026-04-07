@@ -24,7 +24,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -37,13 +36,11 @@ public class UserController {
 
     private final UserService userService;
     private final DTOConverter dtoConverter;
-    private final PasswordEncoder encoder;
 
     @Autowired
-    public UserController(UserService userService, DTOConverter dtoConverter, PasswordEncoder encoder) {
+    public UserController(UserService userService, DTOConverter dtoConverter) {
         this.userService = userService;
         this.dtoConverter = dtoConverter;
-        this.encoder = encoder;
     }
 
     @Operation(summary = "Get paginated list of users")
@@ -101,18 +98,7 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> add(@Valid @RequestBody AddUserRequest request) {
 
-        userService.validateUniqueUser(request.getUsername(), request.getEmail());
-
-        User user = new User(
-                request.getUsername(),
-                request.getName(),
-                request.getLastName(),
-                request.getEmail(),
-                request.isEnabled(),
-                encoder.encode(request.getPassword())
-        );
-
-        userService.createUserAccount(user, false, request.getRoles());
+        userService.createUser(request);
 
         return ResponseEntity.ok(new MessageResponse("User created successfully"));
     }
@@ -148,18 +134,7 @@ public class UserController {
         UserDetailsImpl userDetails =
                 (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        User user = userService.get(userDetails.getId());
-
-        if (!encoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Current password incorrect");
-        }
-
-        if (!request.getNewPassword().equals(request.getConfirmationPassword())) {
-            throw new IllegalArgumentException("Passwords do not match");
-        }
-
-        user.setPassword(encoder.encode(request.getNewPassword()));
-        userService.update(user);
+        userService.updatePassword(userDetails.getId(), request);
 
         return ResponseEntity.ok(new MessageResponse("Password updated"));
     }
@@ -177,17 +152,9 @@ public class UserController {
         UserDetailsImpl userDetails =
                 (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (!userDetails.getId().equals(userDTO.getId())) {
-            return ResponseEntity.status(403).build();
-        }
+        User updatedUser = userService.updatePreferences(userDetails.getId(), userDTO);
 
-        User existingUser = userService.get(userDTO.getId());
-
-        User user = dtoConverter.toUser(userDTO);
-        user.setRoles(existingUser.getRoles());
-        user.setPassword(existingUser.getPassword());
-
-        return ResponseEntity.ok(dtoConverter.toUserDTO(userService.update(user)));
+        return ResponseEntity.ok(dtoConverter.toUserDTO(updatedUser));
     }
 
     @Operation(summary = "Delete user")

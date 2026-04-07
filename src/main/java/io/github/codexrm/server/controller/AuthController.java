@@ -2,7 +2,6 @@ package io.github.codexrm.server.controller;
 
 import io.github.codexrm.server.exception.TokenRefreshException;
 import io.github.codexrm.server.model.RefreshToken;
-import io.github.codexrm.server.model.User;
 import io.github.codexrm.server.payload.request.*;
 import io.github.codexrm.server.payload.response.*;
 import io.github.codexrm.server.security.jwt.JwtUtils;
@@ -22,7 +21,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -37,19 +35,16 @@ public class AuthController {
 
     private final UserService userService;
     private final RefreshTokenService refreshTokenService;
-    private final PasswordEncoder encoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
 
     @Autowired
     public AuthController(UserService userService,
                           RefreshTokenService refreshTokenService,
-                          PasswordEncoder encoder,
                           AuthenticationManager authenticationManager,
                           JwtUtils jwtUtils) {
         this.userService = userService;
         this.refreshTokenService = refreshTokenService;
-        this.encoder = encoder;
         this.authenticationManager = authenticationManager;
         this.jwtUtils = jwtUtils;
     }
@@ -65,19 +60,7 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
 
-        userService.validateUniqueUser(signUpRequest.getUsername(), signUpRequest.getEmail());
-
-        User user = new User(
-                signUpRequest.getUsername(),
-                signUpRequest.getName(),
-                signUpRequest.getLastName(),
-                signUpRequest.getEmail(),
-                signUpRequest.isEnabled(),
-                encoder.encode(signUpRequest.getPassword())
-        );
-
-        userService.createUserAccount(user, true, null);
-
+        userService.registerUser(signUpRequest);
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
 
