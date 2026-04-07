@@ -1,19 +1,16 @@
 package io.github.codexrm.server.service;
 
-import io.github.codexrm.server.enums.ERole;
 import io.github.codexrm.server.enums.SortUser;
 import io.github.codexrm.server.exception.DuplicateResourceException;
 import io.github.codexrm.server.exception.InvalidOperationException;
 import io.github.codexrm.server.exception.ResourceNotFoundException;
 import io.github.codexrm.server.model.Role;
 import io.github.codexrm.server.model.User;
-import io.github.codexrm.server.repository.RoleRepository;
 import io.github.codexrm.server.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -21,12 +18,12 @@ import java.util.Set;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
+    private final RoleService roleService;
 
     @Autowired
-    public UserService(final UserRepository userRepository, RoleRepository roleRepository) {
+    public UserService(final UserRepository userRepository, RoleService roleService) {
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
+        this.roleService = roleService;
     }
 
     public Page<User> getAll(String username, int page, int size, SortUser sort) {
@@ -84,44 +81,16 @@ public class UserService {
 
     public User createUserAccount(User user, boolean isUser, List<String> roleList) {
 
-        Set<Role> roles = new HashSet<>();
+        Set<Role> roles;
 
         if (isUser) {
-            roles.add(getRole(ERole.ROLE_USER));
-
+            roles = roleService.resolveRoles(List.of("ROLE_USER"));
         } else {
-            if (roleList == null) {
-                roles.add(getRole(ERole.ROLE_USER));
-
-            } else {
-                roleList.forEach(role -> {
-                    switch (role) {
-                        case "ROLE_ADMIN":
-                            roles.add(getRole(ERole.ROLE_ADMIN));
-                            break;
-
-                        case "ROLE_MANAGER":
-                            roles.add(getRole(ERole.ROLE_MANAGER));
-                            break;
-
-                        case "ROLE_AUDITOR":
-                            roles.add(getRole(ERole.ROLE_AUDITOR));
-                            break;
-
-                        default:
-                            roles.add(getRole(ERole.ROLE_USER));
-                    }
-                });
-            }
+            roles = roleService.resolveRoles(roleList);
         }
 
         user.setRoles(roles);
         return add(user);
-    }
-
-    private Role getRole(ERole role) {
-        return roleRepository.findByName(role)
-                .orElseThrow(() -> new ResourceNotFoundException("Role", "name", role));
     }
 
     private Sort.Order getOrder(SortUser sort) {
