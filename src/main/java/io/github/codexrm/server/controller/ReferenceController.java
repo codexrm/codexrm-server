@@ -45,7 +45,7 @@ import java.util.*;
 
 @RequestMapping("/api/references")
 @RestController
-@Tag(name = "References", description = "Operations related to user references")
+@Tag(name = "References", description = "Reference management operations")
 public class ReferenceController {
 
     private static final String UPLOADED_FOLDER = "/app/tempUpload";
@@ -97,7 +97,7 @@ public class ReferenceController {
 
     // ===================== ENDPOINTS =====================
 
-    @Operation(summary = "Get paginated references of the authenticated user")
+    @Operation(summary = "Get paginated references")
     @GetMapping
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferencePageDTO> getAll(
@@ -122,7 +122,7 @@ public class ReferenceController {
         return ResponseEntity.ok(buildPageDTO(result));
     }
 
-    @Operation(summary = "Get a reference by ID")
+    @Operation(summary = "Get reference by ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Reference found"),
             @ApiResponse(responseCode = "403", description = "Forbidden",
@@ -133,7 +133,7 @@ public class ReferenceController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferenceDTO> getById(
-                    @Parameter(description = "ID de la referencia", required = true)
+                    @Parameter(description = "Reference ID", required = true)
                     @PathVariable("id") Integer id)  {
 
         User user = getAuthenticatedUser();
@@ -146,7 +146,7 @@ public class ReferenceController {
 
     @Operation(summary = "Create a new reference")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Reference created"),
+            @ApiResponse(responseCode = "201", description = "Reference successfully created"),
             @ApiResponse(responseCode = "400", description = "Invalid request",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
@@ -161,7 +161,7 @@ public class ReferenceController {
         return new ResponseEntity<>(dtoConverter.toReferenceDTO(saved), HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Update an existing reference")
+    @Operation(summary = "Update a reference")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferenceDTO> update(
@@ -179,7 +179,7 @@ public class ReferenceController {
 
     @Operation(summary = "Delete a reference")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Deleted successfully"),
+            @ApiResponse(responseCode = "200", description = "Deleted successfully successfully"),
             @ApiResponse(responseCode = "403", description = "Forbidden",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Reference not found",
@@ -213,7 +213,7 @@ public class ReferenceController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Sync references")
+    @Operation(summary = "Sync user references")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Synchronization successful"),
             @ApiResponse(responseCode = "204", description = "No content after sync"),
@@ -245,7 +245,7 @@ public class ReferenceController {
         return ResponseEntity.ok(buildPageDTO(result));
     }
 
-    @Operation(summary = "Import references")
+    @Operation(summary = "Import references from file")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Import successful"),
             @ApiResponse(responseCode = "400", description = "Invalid file or format",
