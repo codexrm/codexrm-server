@@ -43,7 +43,7 @@ public class UserController {
         this.dtoConverter = dtoConverter;
     }
 
-    @Operation(summary = "Get paginated list of users")
+    @Operation(summary = "Get paginated users")
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserPageDTO> getAll(
@@ -88,7 +88,7 @@ public class UserController {
 
     @Operation(summary = "Create a new user")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User created"),
+            @ApiResponse(responseCode = "200", description = "User successfully created"),
             @ApiResponse(responseCode = "400", description = "Invalid request",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "Duplicate user",
@@ -103,9 +103,9 @@ public class UserController {
         return ResponseEntity.ok(new MessageResponse("User created successfully"));
     }
 
-    @Operation(summary = "Update user")
+    @Operation(summary = "Update a user")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User updated"),
+            @ApiResponse(responseCode = "200", description = "User successfully updated"),
             @ApiResponse(responseCode = "404", description = "User not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
@@ -121,9 +121,9 @@ public class UserController {
         return ResponseEntity.ok(dtoConverter.toUserDTO(userService.update(user)));
     }
 
-    @Operation(summary = "Update password")
+    @Operation(summary = "Update user password")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Password updated"),
+            @ApiResponse(responseCode = "200", description = "Password successfully updated"),
             @ApiResponse(responseCode = "400", description = "Invalid password",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
@@ -139,9 +139,9 @@ public class UserController {
         return ResponseEntity.ok(new MessageResponse("Password updated"));
     }
 
-    @Operation(summary = "Update preferences")
+    @Operation(summary = "Update user preferences")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Preferences updated"),
+            @ApiResponse(responseCode = "200", description = "Preferences successfully updated"),
             @ApiResponse(responseCode = "403", description = "Forbidden",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
@@ -157,9 +157,9 @@ public class UserController {
         return ResponseEntity.ok(dtoConverter.toUserDTO(updatedUser));
     }
 
-    @Operation(summary = "Delete user")
+    @Operation(summary = "Delete a user")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User deleted"),
+            @ApiResponse(responseCode = "200", description = "User successfully deleted"),
             @ApiResponse(responseCode = "404", description = "User not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
