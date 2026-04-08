@@ -110,7 +110,7 @@ public class AuthController {
             @ApiResponse(responseCode = "404", description = "Refresh token not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @PostMapping("/refreshtoken")
+    @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshtoken(@Valid @RequestBody TokenRefreshRequest request) {
 
         String requestRefreshToken = request.getRefreshToken();
@@ -141,7 +141,7 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "User not authenticated",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @PostMapping("/signout")
+    @PostMapping("/logout")
     public ResponseEntity<?> logoutUser() {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
