@@ -43,7 +43,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-@RequestMapping("/api/Reference")
+@RequestMapping("/api/references")
 @RestController
 @Tag(name = "References", description = "Operations related to user references")
 public class ReferenceController {
@@ -98,7 +98,7 @@ public class ReferenceController {
     // ===================== ENDPOINTS =====================
 
     @Operation(summary = "Get paginated references of the authenticated user")
-    @PostMapping("/GetAll")
+    @GetMapping
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferencePageDTO> getAll(
             @RequestParam(name = "year", required = false) String year,
@@ -130,7 +130,7 @@ public class ReferenceController {
             @ApiResponse(responseCode = "404", description = "Reference not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @GetMapping("/Get/{id}")
+    @GetMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferenceDTO> getById(
                     @Parameter(description = "ID de la referencia", required = true)
@@ -150,7 +150,7 @@ public class ReferenceController {
             @ApiResponse(responseCode = "400", description = "Invalid request",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @PostMapping("/Add")
+    @PostMapping
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferenceDTO> add(@Valid @RequestBody ReferenceDTO referenceDTO) {
 
@@ -162,11 +162,15 @@ public class ReferenceController {
     }
 
     @Operation(summary = "Update an existing reference")
-    @PutMapping("/Update")
+    @PutMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
-    public ResponseEntity<ReferenceDTO> update(@Valid @RequestBody ReferenceDTO referenceDTO) {
+    public ResponseEntity<ReferenceDTO> update(
+            @PathVariable("id") Integer id,
+            @Valid @RequestBody ReferenceDTO referenceDTO) {
 
         User user = getAuthenticatedUser();
+        referenceDTO.setId(id);
+
         Reference reference = dtoConverter.toReference(referenceDTO, user);
 
         Reference updated = referenceService.update(reference);
@@ -181,7 +185,7 @@ public class ReferenceController {
             @ApiResponse(responseCode = "404", description = "Reference not found",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @DeleteMapping("/Delete/{id}")
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> delete(
             @Parameter(description = "ID de la referencia", required = true)
@@ -197,7 +201,7 @@ public class ReferenceController {
     }
 
     @Operation(summary = "Delete multiple references")
-    @PostMapping("/DeleteGroup")
+    @DeleteMapping
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> deleteGroup(@Valid @RequestBody ArrayList<Integer> idList) {
 
@@ -216,7 +220,7 @@ public class ReferenceController {
             @ApiResponse(responseCode = "400", description = "Invalid request",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @PostMapping("/Sync")
+    @PostMapping("/sync")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferencePageDTO> sync(
             @RequestParam(name = "author", required = false) String author,
@@ -247,7 +251,7 @@ public class ReferenceController {
             @ApiResponse(responseCode = "400", description = "Invalid file or format",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @PostMapping(value = "/Import", consumes = {"multipart/form-data"})
+    @PostMapping(value = "/import", consumes = {"multipart/form-data"})
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> importReferences(
             @RequestParam (name = "format", defaultValue = "RIS") String format,
@@ -276,7 +280,7 @@ public class ReferenceController {
 
 
     @Operation(summary = "Export references")
-    @PostMapping("/Export")
+    @PostMapping("/export")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<Resource> exportReferences(
             @RequestParam (name = "fileName", defaultValue = "file.txt") String fileName,
@@ -309,16 +313,19 @@ public class ReferenceController {
     }
 
     @Operation(summary = "Get references from all users")
-    @PostMapping("/GetAllFromUsers")
+    @GetMapping("/all-users")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ReferencePageDTO> getAllFromUsers(
             @RequestParam(name = "year", required = false) String year,
             @RequestParam(name = "title", required = false) String title,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size,
-            @Valid @RequestBody(required = false) SortReference sort) {
+            @RequestParam(name = "sort", defaultValue = "id,desc", required = false) String sort) {
 
-        Page<Reference> result = referenceService.getAllFromUsers(year, title, page, size, sort);
+        SortReference sortReference = null;
+        if (sort != null) sortReference = SortReference.fromValue(sort);
+
+        Page<Reference> result = referenceService.getAllFromUsers(year, title, page, size, sortReference);
 
         if (result.getContent().isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);

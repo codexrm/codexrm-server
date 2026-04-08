@@ -174,7 +174,7 @@ public class UserController {
     }
 
     @Operation(summary = "Delete multiple users")
-    @PostMapping("/delete-group")
+    @DeleteMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteGroup(@Valid @RequestBody List<Integer> ids) {
 
