@@ -15,10 +15,10 @@ public class Reference {
     private String title;
 
 
-    @Column(name = "year")
+    @Column(name = "ref_year")
     private String year;
 
-    @Column(name = "month")
+    @Column(name = "ref_month")
     private String month;
 
     @Column(name = "note")

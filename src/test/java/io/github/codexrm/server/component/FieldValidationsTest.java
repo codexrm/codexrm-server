@@ -1,4 +1,4 @@
-package component;
+package io.github.codexrm.server.component;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

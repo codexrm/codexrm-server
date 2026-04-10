@@ -1,12 +1,12 @@
-package service;
+package io.github.codexrm.server.component.service;
 
+import io.github.codexrm.server.exception.DuplicateResourceException;
 import io.github.codexrm.server.exception.ResourceNotFoundException;
 import io.github.codexrm.server.model.Reference;
 import io.github.codexrm.server.model.User;
 import io.github.codexrm.server.repository.ReferenceRepository;
 import io.github.codexrm.server.service.ReferenceService;
-import jakarta.persistence.EntityExistsException;
-import jakarta.persistence.EntityNotFoundException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -59,7 +59,7 @@ class ReferenceServiceTest {
     void shouldThrowException_whenReferenceNotFound() {
         when(referenceRepository.findById(1)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> referenceService.get(1));
+        assertThrows(ResourceNotFoundException.class, () -> referenceService.get(1));
     }
 
     // =========================
@@ -147,7 +147,7 @@ class ReferenceServiceTest {
 
         when(referenceRepository.existsById(1)).thenReturn(true);
 
-        assertThrows(EntityExistsException.class, () -> referenceService.add(ref));
+        assertThrows(DuplicateResourceException.class, () -> referenceService.add(ref));
     }
 
     // =========================
@@ -160,6 +160,7 @@ class ReferenceServiceTest {
         ref.setId(1);
 
         when(referenceRepository.existsById(1)).thenReturn(true);
+        when(referenceRepository.findById(1)).thenReturn(Optional.of(ref));
         when(referenceRepository.save(ref)).thenReturn(ref);
 
         Reference result = referenceService.update(ref);
@@ -174,7 +175,7 @@ class ReferenceServiceTest {
 
         when(referenceRepository.existsById(1)).thenReturn(false);
 
-        assertThrows(EntityNotFoundException.class, () -> referenceService.update(ref));
+        assertThrows(ResourceNotFoundException.class, () -> referenceService.update(ref));
     }
 
     // =========================
@@ -183,11 +184,15 @@ class ReferenceServiceTest {
 
     @Test
     void shouldDeleteReference_whenExists() {
+        Reference ref = new Reference();
+        ref.setId(1);
+
         when(referenceRepository.existsById(1)).thenReturn(true);
+        when(referenceRepository.findById(1)).thenReturn(Optional.of(ref));
 
         referenceService.delete(1);
 
-        verify(referenceRepository).deleteById(1);
+        verify(referenceRepository).delete(ref);
     }
 
     @Test
