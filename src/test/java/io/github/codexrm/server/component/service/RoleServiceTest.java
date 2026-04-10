@@ -1,4 +1,4 @@
-package service;
+package io.github.codexrm.server.component.service;
 
 import io.github.codexrm.server.enums.ERole;
 import io.github.codexrm.server.exception.ResourceNotFoundException;

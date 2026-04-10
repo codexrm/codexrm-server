@@ -1,9 +1,11 @@
-package service;
+package io.github.codexrm.server.component.service;
 
 import io.github.codexrm.server.model.User;
 import io.github.codexrm.server.repository.RoleRepository;
 import io.github.codexrm.server.repository.UserRepository;
 import io.github.codexrm.server.service.UserService;
+import io.github.codexrm.server.exception.ResourceNotFoundException;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
@@ -11,8 +13,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import org.springframework.data.domain.*;
-
-import jakarta.persistence.EntityNotFoundException;
 
 import java.util.Optional;
 
@@ -56,7 +56,7 @@ class UserServiceTest {
     void shouldThrowException_whenUserNotExists() {
         when(userRepository.findById(1)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> userService.get(1));
+        assertThrows(ResourceNotFoundException.class, () -> userService.get(1));
     }
 
     // =========================
@@ -114,6 +114,7 @@ class UserServiceTest {
         user.setId(1);
 
         when(userRepository.existsById(1)).thenReturn(true);
+        when(userRepository.findById(1)).thenReturn(Optional.of(user));
         when(userRepository.save(user)).thenReturn(user);
 
         User result = userService.update(user);
@@ -128,7 +129,7 @@ class UserServiceTest {
 
         when(userRepository.existsById(1)).thenReturn(false);
 
-        assertThrows(EntityNotFoundException.class, () -> userService.update(user));
+        assertThrows(ResourceNotFoundException.class, () -> userService.update(user));
     }
 
     // =========================
@@ -137,18 +138,22 @@ class UserServiceTest {
 
     @Test
     void shouldDeleteUser_whenExists() {
+        User user = new User();
+        user.setId(1);
+
         when(userRepository.existsById(1)).thenReturn(true);
+        when(userRepository.findById(1)).thenReturn(Optional.of(user));
 
         userService.delete(1);
 
-        verify(userRepository).deleteById(1);
+        verify(userRepository).delete(user);
     }
 
     @Test
     void shouldThrowException_whenDeletingNonExistingUser() {
         when(userRepository.existsById(1)).thenReturn(false);
 
-        assertThrows(EntityNotFoundException.class, () -> userService.delete(1));
+        assertThrows(ResourceNotFoundException.class, () -> userService.delete(1));
     }
 
     // =========================
