@@ -236,6 +236,11 @@ public class ReferenceController {
 
         referenceService.sync(newList, updateList, library.getDeletedReferencesList());
 
+        SortReference sort = library.getSortReference();
+        if (sort == null) {
+            sort = SortReference.idDesc;
+        }
+
         Page<Reference> result = referenceService.getAll(user, author, title, page, size, library.getSortReference());
 
         if (result.getContent().isEmpty()) {
