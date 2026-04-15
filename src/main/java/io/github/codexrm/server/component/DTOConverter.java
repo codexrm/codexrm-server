@@ -47,10 +47,8 @@ public class DTOConverter {
         referenceDTOMap.put(ThesisReference.class, ThesisReferenceDTO.class);
     }
 
-    // =========================
-    // ====== REFERENCE ========
-    // =========================
 
+    // REFERENCE
     public ReferenceDTO toReferenceDTO(final Reference reference) {
 
         Class<? extends ReferenceDTO> dtoClass =
@@ -145,10 +143,7 @@ public class DTOConverter {
         return toReference(referenceDTO, user);
     }
 
-    // =========================
-    // ========= USER ==========
-    // =========================
-
+    //  USER
     public List<UserDTO> toUserDTOList(final List<User> userList) {
         return userList.stream()
                 .map(this::toUserDTO)
