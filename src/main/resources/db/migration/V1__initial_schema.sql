@@ -36,8 +36,8 @@ CREATE TABLE user_roles (
 CREATE TABLE reference (
                            id SERIAL PRIMARY KEY,
                            title VARCHAR(255),
-                           year VARCHAR(255),
-                           month VARCHAR(255),
+                           ref_year VARCHAR(255),
+                           ref_month  VARCHAR(255),
                            note VARCHAR(255),
                            usercodex INTEGER,
                            FOREIGN KEY (usercodex) REFERENCES app_user(id) ON DELETE SET NULL
