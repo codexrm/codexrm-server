@@ -1,8 +1,8 @@
 package io.github.codexrm.server.component;
 
-import io.github.codexrm.server.dto.*;
-import io.github.codexrm.server.model.*;
-import io.github.codexrm.server.repository.RoleRepository;
+import io.github.codexrm.server.api.dto.*;
+import io.github.codexrm.server.domain.model.*;
+import io.github.codexrm.server.infrastructure.persistence.repository.RoleRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -234,5 +234,4 @@ class DTOConverterTest {
             dtoConverter.toReferenceDTO(unknown);
         });
     }
-
 }

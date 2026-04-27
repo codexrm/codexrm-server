@@ -6,8 +6,7 @@ public class EnumsConverter {
 
     public EnumsConverter() {}
 
-    // ----------- MONTHS -----------
-
+    //MONTHS
     public MonthsLibrary getMonthLibrary(String months) {
         try {
             return (months != null) ? MonthsLibrary.valueOf(months) : null;
@@ -20,8 +19,7 @@ public class EnumsConverter {
         return (months != null) ? months.name() : null;
     }
 
-    // ----------- FORMAT -----------
-
+    //FORMAT
     public FormatLibrary getFormat(String format) {
         try {
             return (format != null) ? FormatLibrary.valueOf(format) : null;
@@ -30,8 +28,7 @@ public class EnumsConverter {
         }
     }
 
-    // ----------- BOOK SECTION TYPE (SE DEJA CON SWITCH PARA NO ROMPER) -----------
-
+    // BOOK SECTION TYPE
     public BookSectionTypeLibrary getBookSectionTypeLibrary(String type) {
 
         if (type != null) {
@@ -88,8 +85,7 @@ public class EnumsConverter {
         }
     }
 
-    // ----------- THESIS TYPE -----------
-
+    //THESIS TYPE
     public ThesisTypeLibrary getThesisTypeLibrary(String type) {
         try {
             return (type != null) ? ThesisTypeLibrary.valueOf(type) : null;

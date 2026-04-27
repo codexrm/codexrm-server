@@ -2,7 +2,7 @@ package io.github.codexrm.server.component;
 
 import io.github.codexrm.EILibrary.controller.EIManager;
 import io.github.codexrm.EILibrary.model.*;
-import io.github.codexrm.server.model.*;
+import io.github.codexrm.server.domain.model.*;
 import org.jbibtex.ParseException;
 import org.jbibtex.TokenMgrException;
 
@@ -61,8 +61,7 @@ public class ImportR {
 
             default ->
                     throw new IllegalArgumentException(
-                            "Unsupported reference type: " + entry.getClass().getSimpleName()
-                    );
+                            "Unsupported reference type: " + entry.getClass().getSimpleName());
         };
     }
 

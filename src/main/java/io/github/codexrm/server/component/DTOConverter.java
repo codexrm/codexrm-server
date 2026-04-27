@@ -1,8 +1,8 @@
 package io.github.codexrm.server.component;
 
-import io.github.codexrm.server.dto.*;
-import io.github.codexrm.server.model.*;
-import io.github.codexrm.server.service.RoleService;
+import io.github.codexrm.server.api.dto.*;
+import io.github.codexrm.server.domain.model.*;
+import io.github.codexrm.server.domain.service.RoleService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

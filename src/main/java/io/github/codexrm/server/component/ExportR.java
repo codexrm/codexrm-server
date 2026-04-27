@@ -2,7 +2,7 @@ package io.github.codexrm.server.component;
 
 import io.github.codexrm.EILibrary.controller.EIManager;
 import io.github.codexrm.EILibrary.model.*;
-import io.github.codexrm.server.model.*;
+import io.github.codexrm.server.domain.model.*;
 
 import java.io.File;
 import java.io.IOException;

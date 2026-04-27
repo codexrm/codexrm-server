@@ -2,7 +2,6 @@ package io.github.codexrm.server.component;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import io.github.codexrm.server.component.FieldValidations;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,7 +13,8 @@ public class FieldValidationsTest {
     void setUp() {
         validations = new FieldValidations();
     }
-    // ===================== YEAR =====================
+
+    // Year
 
     @Test
     void shouldAcceptValidYear() {
@@ -31,7 +31,7 @@ public class FieldValidationsTest {
         assertTrue(validations.isInvalidateYear("20a4"));
     }
 
-    // ===================== AUTHOR / EDITOR =====================
+    // Author/Editor
 
     @Test
     void shouldAcceptValidAuthor() {
@@ -48,7 +48,7 @@ public class FieldValidationsTest {
         assertTrue(validations.isInvalidateAuthorOrEditor("juan garcia"));
     }
 
-    // ===================== VOLUME / CHAPTER =====================
+    // Volume/Chapter
 
     @Test
     void shouldAcceptValidVolume() {
@@ -60,7 +60,7 @@ public class FieldValidationsTest {
         assertTrue(validations.isInvalidateChapterOrVolume("abc"));
     }
 
-    // ===================== NUMBER =====================
+    // Number
 
     @Test
     void shouldAcceptValidNumber() {
@@ -72,7 +72,7 @@ public class FieldValidationsTest {
         assertTrue(validations.isInvalidateNumber("@@@"));
     }
 
-    // ===================== PAGES =====================
+    // Pages
 
     @Test
     void shouldAcceptValidPages() {
@@ -89,7 +89,7 @@ public class FieldValidationsTest {
         assertTrue(validations.isInvalidatePages("pages"));
     }
 
-    // ===================== ISSN =====================
+    // Isnn
 
     @Test
     void shouldAcceptValidIssn() {
@@ -101,7 +101,7 @@ public class FieldValidationsTest {
         assertTrue(validations.isInvalidateIssn("123"));
     }
 
-    // ===================== ISBN =====================
+    // Isbn
 
     @Test
     void shouldAcceptValidIsbn() {
@@ -113,7 +113,7 @@ public class FieldValidationsTest {
         assertTrue(validations.isInvalidateIsbn("invalid-isbn"));
     }
 
-    // ===================== ADDRESS =====================
+    // Address
 
     @Test
     void shouldAcceptValidAddress() {
@@ -125,7 +125,7 @@ public class FieldValidationsTest {
         assertTrue(validations.isInvalidateAddress("1234"));
     }
 
-    // ===================== SERIES =====================
+    // Series
 
     @Test
     void shouldAcceptValidSeries() {
@@ -137,7 +137,7 @@ public class FieldValidationsTest {
         assertTrue(validations.isInvalidateSeries("1234"));
     }
 
-    // ===================== EDITION =====================
+    // Edition
 
     @Test
     void shouldAcceptValidEdition() {
@@ -149,7 +149,7 @@ public class FieldValidationsTest {
         assertTrue(validations.isInvalidateEdition("@@@"));
     }
 
-    // ===================== URL =====================
+    // Url
 
     @Test
     void shouldAcceptValidUrl() {

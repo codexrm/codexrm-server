@@ -1,0 +1,164 @@
+package io.github.codexrm.server.api.controller;
+
+import io.github.codexrm.server.api.dto.request.LoginRequest;
+import io.github.codexrm.server.api.dto.request.SignupRequest;
+import io.github.codexrm.server.api.dto.request.TokenRefreshRequest;
+import io.github.codexrm.server.api.dto.response.ErrorResponse;
+import io.github.codexrm.server.api.dto.response.JwtResponse;
+import io.github.codexrm.server.api.dto.response.MessageResponse;
+import io.github.codexrm.server.api.dto.response.TokenRefreshResponse;
+import io.github.codexrm.server.infrastructure.exception.TokenRefreshException;
+import io.github.codexrm.server.domain.model.RefreshToken;
+import io.github.codexrm.server.infrastructure.security.jwt.JwtUtils;
+import io.github.codexrm.server.infrastructure.security.services.RefreshTokenService;
+import io.github.codexrm.server.infrastructure.security.services.UserDetailsImpl;
+import io.github.codexrm.server.domain.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/auth")
+@Tag(name = "Auth", description = "Authentication operations")
+public class AuthController {
+
+    private final UserService userService;
+    private final RefreshTokenService refreshTokenService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
+
+    @Autowired
+    public AuthController(UserService userService,
+                          RefreshTokenService refreshTokenService,
+                          AuthenticationManager authenticationManager,
+                          JwtUtils jwtUtils) {
+        this.userService = userService;
+        this.refreshTokenService = refreshTokenService;
+        this.authenticationManager = authenticationManager;
+        this.jwtUtils = jwtUtils;
+    }
+
+    @Operation(summary = "Register a new user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User successfully registered"),
+            @ApiResponse(responseCode = "400", description = "Invalid request",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "User already exists",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+    @PostMapping("/signup")
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
+
+        userService.registerUser(signUpRequest);
+        return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    }
+
+    @Operation(summary = "Authenticate user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Authentication successful"),
+            @ApiResponse(responseCode = "400", description = "Invalid credentials",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+    @PostMapping("/signin")
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+
+        String jwt = jwtUtils.generateJwtToken(userDetails);
+
+        List<String> roles = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList());
+
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+
+        Date tokenDate = new Date(System.currentTimeMillis() + jwtUtils.getJwtExpirationMs());
+        Date refreshTokenDate = Date.from(refreshToken.getExpiryDate());
+
+        return ResponseEntity.ok(new JwtResponse(
+                jwt,
+                refreshToken.getToken(),
+                tokenDate,
+                refreshTokenDate,
+                userDetails.getId(),
+                userDetails.getUsername(),
+                userDetails.getEmail(),
+                userDetails.getName(),
+                userDetails.getLastName(),
+                userDetails.isEnabled(),
+                roles));
+    }
+
+    @Operation(summary = "Refresh access token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token refreshed successfully"),
+            @ApiResponse(responseCode = "404", description = "Refresh token not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshtoken(@Valid @RequestBody TokenRefreshRequest request) {
+
+        String requestRefreshToken = request.getRefreshToken();
+
+        return refreshTokenService.findByToken(requestRefreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    String token = jwtUtils.generateTokenFromUsername(user.getUsername());
+
+                    return ResponseEntity.ok(
+                            new TokenRefreshResponse(
+                                    token,
+                                    requestRefreshToken,
+                                    new Date(System.currentTimeMillis() + jwtUtils.getJwtExpirationMs())
+                            )
+                    );
+                })
+                .orElseThrow(() -> new TokenRefreshException(
+                        requestRefreshToken,
+                        "Refresh token is not in database!"));
+    }
+
+    @Operation(summary = "Logout user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful"),
+            @ApiResponse(responseCode = "401", description = "User not authenticated",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetailsImpl userDetails) {
+
+            refreshTokenService.deleteByUserId(userDetails.getId());
+            SecurityContextHolder.clearContext();
+
+            return ResponseEntity.ok(new MessageResponse("Log out successful!"));
+        }
+
+        return ResponseEntity.status(401).body(new MessageResponse("Invalid authentication principal"));
+    }
+}

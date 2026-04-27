@@ -1,7 +1,7 @@
 package io.github.codexrm.server.component;
 
-import io.github.codexrm.server.exception.BadRequestException;
-import io.github.codexrm.server.model.*;
+import io.github.codexrm.server.domain.model.*;
+import io.github.codexrm.server.infrastructure.exception.BadRequestException;
 
 public class ValidateReference {
 
@@ -162,63 +162,56 @@ public class ValidateReference {
 
     public Reference validateRequiredArticle(ArticleReference article) {
         if (article.getAuthor() == null || article.getTitle() == null || article.getJournal() == null || article.getYear() == null ||
-                article.getAuthor().isBlank() || article.getTitle().isBlank() || article.getJournal().isBlank() || article.getYear().isBlank()) {
+                article.getAuthor().isBlank() || article.getTitle().isBlank() || article.getJournal().isBlank() || article.getYear().isBlank())
             throw new BadRequestException("Missing required fields for Reference");
-        } else {
-            return article;
-        }
+
+         else return article;
     }
 
     public Reference validateRequiredBookSection(BookSectionReference section) {
         if (section.getChapter() == null || section.getPages() == null || section.getAuthor() == null || section.getEditor() == null || section.getTitle() == null || section.getPublisher() == null || section.getYear() == null ||
-                section.getChapter().isBlank() || section.getPages().isBlank() || section.getAuthor().isBlank() || section.getEditor().isBlank() || section.getTitle().isBlank() || section.getPublisher().isBlank() || section.getYear().isBlank()) {
+                section.getChapter().isBlank() || section.getPages().isBlank() || section.getAuthor().isBlank() || section.getEditor().isBlank() || section.getTitle().isBlank() || section.getPublisher().isBlank() || section.getYear().isBlank())
             throw new BadRequestException("Missing required fields for Reference");
-        } else {
-            return section;
-        }
+
+            else return section;
     }
 
     public Reference validateRequiredBook(BookReference book) {
         if (book.getAuthor() == null || book.getEditor() == null || book.getTitle() == null || book.getPublisher() == null || book.getYear() == null ||
-                book.getAuthor().isBlank() || book.getEditor().isBlank() || book.getTitle().isBlank() || book.getPublisher().isBlank() || book.getYear().isBlank()) {
+                book.getAuthor().isBlank() || book.getEditor().isBlank() || book.getTitle().isBlank() || book.getPublisher().isBlank() || book.getYear().isBlank())
             throw new BadRequestException("Missing required fields for Reference");
-        } else {
-            return book;
-        }
+
+        else return book;
     }
 
     public Reference validateRequiredBookLet(BookLetReference let) {
-        if (let.getTitle() == null || let.getAuthor() == null || let.getTitle().isBlank() || let.getAuthor().isBlank()) {
+        if (let.getTitle() == null || let.getAuthor() == null || let.getTitle().isBlank() || let.getAuthor().isBlank())
             throw new BadRequestException("Missing required fields for Reference");
-        } else {
-            return let;
-        }
+
+        else return let;
     }
 
     public Reference validateRequiredConferenceProceedings(ConferenceProceedingReference proceedings) {
-        if (proceedings.getTitle() == null || proceedings.getYear() == null || proceedings.getTitle().isBlank() || proceedings.getYear().isBlank()) {
+        if (proceedings.getTitle() == null || proceedings.getYear() == null || proceedings.getTitle().isBlank() || proceedings.getYear().isBlank())
             throw new BadRequestException("Missing required fields for Reference");
-        } else {
-            return proceedings;
-        }
+
+            else return proceedings;
     }
 
     public Reference validateRequiredConferencePaper(ConferencePaperReference paper) {
         if (paper.getAuthor() == null || paper.getTitle() == null || paper.getBookTitle() == null || paper.getYear() == null ||
-                paper.getAuthor().isBlank() || paper.getTitle().isBlank() || paper.getBookTitle().isBlank() || paper.getYear().isBlank()) {
+                paper.getAuthor().isBlank() || paper.getTitle().isBlank() || paper.getBookTitle().isBlank() || paper.getYear().isBlank())
             throw new BadRequestException("Missing required fields for Reference");
-        } else {
-            return paper;
-        }
+
+        else return paper;
     }
 
     public Reference validateRequiredThesis(ThesisReference thesis) {
         if (thesis.getAuthor() == null || thesis.getTitle() == null || thesis.getSchool() == null || thesis.getYear() == null ||
-                thesis.getAuthor().isBlank() || thesis.getTitle().isBlank() || thesis.getSchool().isBlank() || thesis.getYear().isBlank()) {
+                thesis.getAuthor().isBlank() || thesis.getTitle().isBlank() || thesis.getSchool().isBlank() || thesis.getYear().isBlank())
             throw new BadRequestException("Missing required fields for Reference");
-        } else {
-            return thesis;
-        }
+
+            else return thesis;
     }
 }
 
