@@ -1,8 +1,0 @@
-package io.github.codexrm.server.exception;
-
-public class DuplicateResourceException extends RuntimeException {
-
-    public DuplicateResourceException(String resource, String field, Object value) {
-        super(resource + " already exists with " + field + ": " + value);
-    }
-}
