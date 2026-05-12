@@ -38,7 +38,7 @@ public class BookReferenceDTO extends ReferenceDTO {
     protected String number;
 
     @Schema(description = "Publication address or location", example = "São Paulo, Brasil")
-    @Pattern(regexp = "^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\\s]*[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+,\\s[[A-Za-záéíóúüñÁÉÍÓÚÜÑ]+]*")
+    @Pattern(regexp = "^$|^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\\s]*[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+,\\s[[A-Za-záéíóúüñÁÉÍÓÚÜÑ]+]*")
     protected String address;
 
     @Schema(description = "Edition of the book", example = "2.")

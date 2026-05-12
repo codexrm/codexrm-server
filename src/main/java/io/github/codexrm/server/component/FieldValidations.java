@@ -15,15 +15,15 @@ public class FieldValidations {
     }
 
     public boolean isInvalidateAddress(String address) {
+
         if (address == null || address.isBlank()) {
             return true;
         }
 
-        Pattern pat = Pattern.compile(
-                "^[\\p{Lu}][\\p{L}\\s]*,\\s[\\p{Lu}][\\p{L}\\s]*$"
-        );
+        Pattern pat = Pattern.compile("^$|^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\\s]*[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+,\\s[[A-Za-záéíóúüñÁÉÍÓÚÜÑ]+]*");
 
         Matcher mat = pat.matcher(address.trim());
+
         return !mat.matches();
     }
 

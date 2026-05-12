@@ -25,7 +25,7 @@ public class ThesisReferenceDTO extends ReferenceDTO {
     private String type;
 
     @Schema(description = "Location of the university or institution", example = "La Habana, Cuba")
-    @Pattern(regexp = "^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\\s]*[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+,\\s[[A-Za-záéíóúüñÁÉÍÓÚÜÑ]+]*")
+    @Pattern(regexp ="^$|^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\\s]*[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+,\\s[[A-Za-záéíóúüñÁÉÍÓÚÜÑ]+]*")
     private String address;
 
     public ThesisReferenceDTO() {}
