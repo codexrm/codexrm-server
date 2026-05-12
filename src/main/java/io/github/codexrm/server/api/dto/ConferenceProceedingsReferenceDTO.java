@@ -27,7 +27,7 @@ public class ConferenceProceedingsReferenceDTO extends ReferenceDTO {
     private String series;
 
     @Schema(description = "Location where the conference took place", example = "Paris, Francia")
-    @Pattern(regexp = "^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\\s]*[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+,\\s[[A-Za-záéíóúüñÁÉÍÓÚÜÑ]+]*")
+    @Pattern(regexp =   "^$|^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\\s]*[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+,\\s[[A-Za-záéíóúüñÁÉÍÓÚÜÑ]+]*")
     private String address;
 
     @Schema(description = "Publisher of the conference proceedings", example = "Springer")

@@ -117,7 +117,7 @@ public class FieldValidationsTest {
 
     @Test
     void shouldAcceptValidAddress() {
-        assertFalse(validations.isInvalidateAddress("Madrid, España"));
+        assertFalse(validations.isInvalidateAddress("La Habana, Cuba"));
     }
 
     @Test

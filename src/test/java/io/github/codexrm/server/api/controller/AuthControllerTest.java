@@ -75,7 +75,7 @@ class AuthControllerTest {
                         .with(csrf())
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.message").value("User registered successfully!"));
 
         verify(userService).registerUser(any());

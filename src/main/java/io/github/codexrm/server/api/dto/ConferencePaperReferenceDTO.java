@@ -41,7 +41,7 @@ public class ConferencePaperReferenceDTO extends ReferenceDTO {
     private String pages;
 
     @Schema(description = "Location where the conference took place", example = "Berlin, Alemania")
-    @Pattern(regexp = "^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\\s]*[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+,\\s[[A-Za-záéíóúüñÁÉÍÓÚÜÑ]+]*")
+    @Pattern(regexp =   "^$|^[A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ\\s]*[A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+,\\s[[A-Za-záéíóúüñÁÉÍÓÚÜÑ]+]*")
     private String address;
 
     @Schema(description = "Organization responsible for the conference", example = "IEEE")
