@@ -1,171 +1,222 @@
-# JPA Inheritance Strategy Decision
+# Decision Log
 
-## Context
-
-The system models different types of references such as Article, Book, Thesis, ConferencePaper, etc.
-
-Currently, JPA inheritance is configured using:
-
-@Inheritance(strategy = InheritanceType.JOINED)
-
-This means the base entity (Reference) is stored in one table, and each subtype has its own table linked by a foreign key.
+This document records the main architectural decisions made during the development of CodexRM Server.
 
 ---
 
-## JOINED Strategy
+## ADR-001: Use PostgreSQL as Primary Database
 
-### Description
+### Status
+Accepted
 
-Each class in the inheritance hierarchy is mapped to its own table.
+### Context
 
-Queries involving subclasses require JOIN operations between the base table and the subclass tables.
+The project requires a relational database capable of handling structured bibliographic reference data with strong SQL support, transactional consistency, and compatibility with production environments.
 
----
+The application also requires compatibility with integration testing tools such as Testcontainers.
 
-## Pros
+### Decision
 
-- Clear and normalized database structure
-- Avoids nullable columns for subtype-specific fields
-- Good separation of concerns between entities
-- Easier to maintain and extend
+Use PostgreSQL as the primary relational database for development, testing, and production environments.
 
----
+### Consequences
 
-## Cons
+#### Positive
 
-- Requires JOIN operations in queries
-- Potential performance impact in complex queries
-- Pagination and large queries may be slightly slower
+- Strong SQL compliance and transactional support
+- Excellent integration with Spring Boot and JPA
+- Reliable production-grade database
+- Compatible with Testcontainers for realistic integration testing
+- Better alignment between development and production environments
 
----
+#### Negative
 
-## Alternatives
-
-### SINGLE_TABLE
-
-**Description:**
-All entities are stored in a single table with a discriminator column.
-
-**Pros:**
-- No JOINs required
-- Better read performance
-
-**Cons:**
-- Many nullable columns
-- Poor data normalization
-- Harder to maintain as the model grows
+- Requires Docker or local PostgreSQL installation
+- Slightly more setup complexity than in-memory databases such as H2
+- Integration tests are slower compared to pure in-memory testing
 
 ---
 
-### TABLE_PER_CLASS
+## ADR-002: Use JWT Authentication
 
-**Description:**
-Each class has its own independent table.
+### Status
+Accepted
 
-**Pros:**
-- No JOINs required
+### Context
 
-**Cons:**
-- Data duplication
-- Complex queries when accessing the base type
-- Not ideal for polymorphic queries
+The application exposes a REST API that will be consumed by multiple clients, including web, desktop, and potentially mobile applications.
 
----
+The authentication mechanism should be stateless, scalable, and compatible with HTTP-based APIs.
 
-## Performance Considerations
+### Decision
 
-- JOINED introduces additional JOINs when retrieving subclass data
-- For this system, queries are not highly complex or performance-critical
-- The trade-off between performance and data integrity favors JOINED
+Use JWT (JSON Web Token) authentication with Spring Security.
 
----
+Access tokens are generated after successful authentication and sent in the Authorization header using the Bearer scheme.
 
-## Decision
+### Consequences
 
-We decided to keep the JOINED inheritance strategy.
+#### Positive
 
----
+- Stateless authentication mechanism
+- Scalable for distributed systems and multiple clients
+- Reduces server-side session management complexity
+- Well supported by Spring Security
+- Suitable for REST APIs
 
-## Justification
+#### Negative
 
-The system manages multiple distinct reference types with different fields.
+- Token invalidation is more complex compared to session-based authentication
+- Requires careful secret key management
+- Expired token handling adds additional logic
+- JWT payload size increases request headers
 
-Using JOINED ensures:
-- Clean database design
-- Better scalability when adding new reference types
-- Maintainable and readable data model
-
-Performance impact is acceptable given the current system requirements.
 
 ---
 
-# Transactional Boundaries and Isolation Levels
+## ADR-003: Adopt Layered Architecture
 
-## Context
+### Status
+Accepted
 
-The system currently has limited usage of @Transactional annotations.
+### Context
 
-A review of the codebase shows that @Transactional is only used in a few service classes (e.g., RefreshTokenService and UserDetailsServiceImpl), while most operations rely on default Spring Data JPA behavior.
+As the project grew in complexity, it became necessary to separate responsibilities between API exposure, business logic, persistence, and infrastructure concerns.
 
----
+A clear package structure was required to improve maintainability, readability, and testability.
 
-## Current State
+### Decision
 
-- @Transactional is not consistently applied across service methods
-- Most CRUD operations rely on implicit transaction handling by Spring Data JPA
-- No clearly defined transactional strategy is present
+Adopt a layered architecture organized into the following main layers:
 
----
+- api
+- domain
+- infrastructure
+- component
 
-## PostgreSQL Isolation Level
+Each layer is responsible for a specific part of the application and communicates through clearly defined boundaries.
 
-PostgreSQL uses the default isolation level:
+### Consequences
 
-READ COMMITTED
+#### Positive
 
-### Characteristics:
+- Better separation of concerns
+- Improved code organization and readability
+- Easier unit and integration testing
+- Simplifies future maintenance and feature additions
+- Reduces coupling between framework and business logic
 
-- Prevents dirty reads
-- Allows non-repeatable reads
-- Each query sees only committed data
+#### Negative
 
----
-
-## Analysis
-
-### Transactional usage
-
-Transactions are important when:
-- Multiple database operations must succeed or fail together
-- Data consistency is critical
-- Business logic spans multiple repository calls
-
-### Current system evaluation
-
-- Most operations are simple (single insert/update)
-- No complex multi-step transactional flows were identified
-- Current behavior is sufficient for existing use cases
+- More classes and package structure complexity
+- Additional mapping between layers
+- Slightly more boilerplate code compared to simpler architectures
 
 ---
 
-## Potential Improvements
+## ADR-004: Use Flyway for Database Migrations
 
-- Apply @Transactional at the service layer for write operations
-- Ensure that future complex operations (e.g., batch processing or synchronization endpoints) are transactional
-- Avoid placing @Transactional in controllers (best practice)
+### Status
+Accepted
+
+### Context
+
+The project requires database schema versioning to ensure consistency across development, testing, and production environments.
+
+Manual schema updates become difficult to maintain as the application evolves.
+
+### Decision
+
+Use Flyway for database migration management.
+
+Database schema changes are versioned using SQL migration scripts executed automatically during application startup.
+
+### Consequences
+
+#### Positive
+
+- Database schema is version-controlled
+- Consistent database structure across environments
+- Easier collaboration between developers
+- Simplifies deployment and environment setup
+- Works well with PostgreSQL and Testcontainers
+
+#### Negative
+
+- Requires maintaining migration scripts
+- Incorrect migrations may affect application startup
+- Schema rollback management requires additional planning
 
 ---
 
-## Decision
+## ADR-005: Use Testcontainers for Integration Testing
 
-Keep the current transactional setup, but recommend improving consistency by introducing @Transactional at the service layer where appropriate.
+### Status
+Accepted
+
+### Context
+
+The project requires reliable integration testing against a real PostgreSQL database environment.
+
+Using only H2 could hide database-specific issues because H2 behavior differs from PostgreSQL in several aspects such as SQL dialect, constraints, and transaction behavior.
+
+### Decision
+
+Use Testcontainers with PostgreSQL for integration and end-to-end tests.
+
+Integration tests dynamically start isolated PostgreSQL containers during test execution.
+
+### Consequences
+
+#### Positive
+
+- Tests run against a real PostgreSQL environment
+- Reduces differences between development and testing environments
+- Improves reliability of integration tests
+- Flyway migrations are validated automatically during tests
+- Better confidence in production compatibility
+
+#### Negative
+
+- Tests execute more slowly compared to in-memory databases
+- Requires Docker availability during test execution
+- Adds additional setup complexity for CI environments
 
 ---
 
-## Justification
+## ADR-006: Use DTO Inheritance for Reference Types
 
-The system does not currently require advanced transaction management.
+### Status
+Accepted
 
-PostgreSQL's default isolation level (READ COMMITTED) provides sufficient consistency for current operations.
+### Context
 
-Introducing transactions selectively improves reliability without adding unnecessary complexity.
+The application manages multiple reference types such as books, articles, web pages, and conference papers.
+
+Each reference type shares common fields while also requiring subtype-specific attributes.
+
+A flexible API representation strategy was needed to support polymorphic request and response handling.
+
+### Decision
+
+Use DTO inheritance for reference representations.
+
+A base ReferenceDTO abstraction is extended by subtype-specific DTOs such as BookReferenceDTO and WebPageReferenceDTO.
+
+Jackson polymorphic deserialization is used to resolve DTO subtypes through the referenceType field.
+
+### Consequences
+
+#### Positive
+
+- Reuse of common reference fields
+- Cleaner and more extensible DTO hierarchy
+- Simplifies support for multiple reference types
+- Improves API consistency
+- Compatible with OpenAPI polymorphic schema generation
+
+#### Negative
+
+- More complex JSON serialization and deserialization
+- Requires explicit subtype configuration
+- Error handling becomes more complex when subtype information is missing

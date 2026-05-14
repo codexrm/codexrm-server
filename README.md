@@ -5,9 +5,9 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
 ![Docker](https://img.shields.io/badge/Docker-ready-blue)
 
-Backend REST API for managing academic references and citations.
+Backend REST API for managing bibliographic references and citations.
 
-CodexRM provides authentication, reference management, synchronization support, and import/export capabilities for academic references across multiple clients.
+CodexRM provides authentication, reference management, synchronization support, and import/export capabilities for bibliographic references across multiple clients.
 
 The system uses JWT-based authentication and a Last Write Wins synchronization strategy for conflict resolution.
 
@@ -17,7 +17,7 @@ The system uses JWT-based authentication and a Last Write Wins synchronization s
 
 ### Reference Management
 
-- Create and manage academic references
+- Create and manage bibliographic references
 - Retrieve references by user
 - Pagination, sorting and filtering support
 
@@ -289,4 +289,4 @@ http://localhost:8081/actuator/health
 ---
 ## Author
 
-Backend API developed for the CodexRM academic reference management system.
+Backend API developed for the CodexRM bibliographic reference management system.
