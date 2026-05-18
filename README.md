@@ -88,6 +88,28 @@ src/main/java/io/github/codexrm/server
 
 ---
 
+## Architecture Overview
+
+CodexRM follows a layered architecture designed to separate API exposure, business rules, persistence, and infrastructure concerns.
+
+Main architectural goals:
+
+- maintainability
+- clear separation of responsibilities
+- scalability
+- testability
+- framework isolation
+
+Key architectural decisions:
+
+- DTO-based API layer
+- JWT authentication with Spring Security
+- DTOConverter components for explicit DTO mapping
+- Flyway-managed database migrations
+- OpenAPI-first API documentation
+
+---
+
 ## Running the Project
 
 ### Prerequisites
