@@ -224,3 +224,103 @@ The current architecture was designed to:
 - Support future scalability
 - Improve code readability
 - Separate technical concerns from business logic
+
+---
+
+## DTO Conversion Strategy
+
+The project uses explicit DTO conversion to separate API contracts from domain entities.
+
+DTO conversion responsibilities are centralized in reusable converter components located in the `component` package.
+
+### Goals of DTO Conversion
+
+- isolate domain models from external API contracts
+- avoid exposing internal entities directly
+- improve maintainability
+- support request/response specialization
+- simplify validation and serialization
+
+### Mapping Approach
+
+The project favors explicit mapping strategies instead of relying entirely on automatic object mapping libraries.
+
+Reasons include:
+
+- better control over polymorphic scenarios
+- predictable mapping behavior
+- easier debugging
+- reduced hidden conversion logic
+
+Code reading notes about ModelMapper limitations and inheritance behavior is documented in:
+
+```text
+docs/code-reading/modelmapper.md
+```
+---
+
+## OpenAPI Documentation
+
+The project uses `springdoc-openapi` to automatically generate OpenAPI 3 documentation and Swagger UI integration.
+
+### OpenAPI Goals
+
+- improve API discoverability
+- simplify frontend/backend integration
+- standardize endpoint documentation
+- expose request/response schemas
+- document authentication requirements
+
+### Swagger UI
+
+Swagger UI is available at:
+
+```text
+/swagger-ui.html
+```
+
+### OpenAPI JSON
+
+The generated OpenAPI specification is available at:
+
+```text
+/v3/api-docs
+```
+
+The project includes:
+
+- endpoint documentation with `@Operation`
+- request/response examples using `@Schema`
+- JWT authentication documentation with `@SecurityScheme`
+- standardized error response schemas
+
+Additional documentation and code reading notes are available in:
+
+```text
+docs/code-reading/springdoc-openapi.md
+```
+
+---
+
+## Design Principles
+
+The architecture follows a set of design principles intended to keep the codebase maintainable and scalable.
+
+### Core Principles
+
+- clear separation of concerns
+- explicit boundaries between layers
+- framework isolation from business rules
+- reusable infrastructure components
+- API-first documentation practices
+- predictable DTO conversion behavior
+
+### Long-Term Goals
+
+- simplify onboarding for new contributors
+- support future modularization
+- improve testability
+- maintain consistent API documentation
+- reduce architectural coupling
+
+---

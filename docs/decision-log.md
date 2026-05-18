@@ -220,3 +220,92 @@ Jackson polymorphic deserialization is used to resolve DTO subtypes through the 
 - More complex JSON serialization and deserialization
 - Requires explicit subtype configuration
 - Error handling becomes more complex when subtype information is missing
+
+---
+
+## ADR-007: Favor Explicit DTO Conversion over Automatic Mapping
+
+### Status
+Accepted
+
+### Context
+
+The project uses multiple DTO types and inheritance-based request/response structures.
+
+Automatic mapping libraries such as ModelMapper can simplify DTO conversion, but inheritance-heavy and polymorphic scenarios may introduce hidden mapping behavior and reduce predictability.
+
+A code reading analysis was conducted to evaluate ModelMapper inheritance support and runtime polymorphism limitations.
+
+### Decision
+
+Favor explicit DTO conversion using dedicated converter components instead of relying entirely on automatic object mapping libraries.
+
+DTO conversion responsibilities are centralized in reusable components located in the `component` package.
+
+### Consequences
+
+#### Positive
+
+- Better control over polymorphic DTO conversion
+- Predictable and explicit mapping behavior
+- Easier debugging and maintenance
+- Reduced hidden conversion logic
+- Clear separation between API and domain layers
+
+#### Negative
+
+- More verbose mapping code
+- Additional maintenance effort for DTO converters
+- Slower initial implementation compared to automatic mapping libraries
+
+### Related Documentation
+
+```text
+docs/code-reading/modelmapper.md
+```
+
+---
+
+## ADR-008: Standardize OpenAPI Documentation with `springdoc-openapi`
+
+### Status
+Accepted
+
+### Context
+
+The project exposes a REST API consumed by multiple clients and requires consistent API documentation for development, testing, and integration purposes.
+
+Manual API documentation approaches are difficult to maintain as the API evolves.
+
+### Decision
+
+Use `springdoc-openapi` for automatic OpenAPI 3 specification generation and Swagger UI integration.
+
+Endpoints should include explicit documentation annotations such as:
+
+- `@Operation`
+- `@ApiResponse`
+- `@Schema`
+- `@SecurityScheme`
+
+### Consequences
+
+#### Positive
+
+- Standardized API documentation
+- Improved developer onboarding
+- Easier frontend/backend integration
+- Automatic OpenAPI specification generation
+- Interactive Swagger UI support
+
+#### Negative
+
+- Requires maintaining annotation consistency
+- Additional documentation effort during development
+- Complex DTO hierarchies may require manual schema adjustments
+
+### Related Documentation
+
+```text
+docs/code-reading/springdoc-openapi.md
+```
