@@ -20,7 +20,7 @@ public class ThesisReferenceDTO extends ReferenceDTO {
     @NotBlank
     private String school;
 
-    @Schema(description = "Type of thesis", example = "PhD Thesis")
+    @Schema(description = "Type of thesis", example = "MASTERS")
     @Pattern(regexp = "^(MASTERS|PHD)$")
     private String type;
 

@@ -31,7 +31,7 @@ public class ReferenceDTO {
     @Pattern(regexp = "\\d{4}|\\d{4}--\\d{4}")
     protected String year;
 
-    @Schema(description = "Month of publication", example = "July")
+    @Schema(description = "Month of publication", example = "jan")
     @Pattern(regexp = "^(?i)(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)$")
     protected String month;
 

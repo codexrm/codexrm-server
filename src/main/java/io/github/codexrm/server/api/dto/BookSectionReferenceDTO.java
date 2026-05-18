@@ -21,7 +21,7 @@ public class BookSectionReferenceDTO extends BookReferenceDTO {
     @Pattern(regexp = "[IVXMLCD]+|[IVXMLCD]+,[IVXMLCD]+|[IVXMLCD]+-[IVXMLCD]+|[0-9]+|[0-9]+,[0-9]+|[0-9]+-[0-9]+")
     private String pages;
 
-    @Schema(description = "Type of section (e.g., MATHESIS, PHDTHESIS)", example = "chapter")
+    @Schema(description = "Type of section", example = "PHDTHESIS")
     @Pattern(regexp = "^(?i)(MATHESIS|PHDTHESIS|CANDTHESIS|TECHREPORT|RESREPORT|SOFTWARE|AUDIOCD|DataCD)$",
             message = "Invalid type")
     private String type;
