@@ -2,34 +2,29 @@ package io.github.codexrm.server.component;
 
 import io.github.codexrm.server.api.dto.*;
 import io.github.codexrm.server.domain.model.*;
-import io.github.codexrm.server.infrastructure.persistence.repository.RoleRepository;
+import io.github.codexrm.server.domain.service.RoleService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.modelmapper.ModelMapper;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Import({DTOConverter.class})
 class DTOConverterTest {
 
     @Mock
-    private RoleRepository roleRepository;
+    private RoleService roleService;
 
-    @InjectMocks
     private DTOConverter dtoConverter;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        ReflectionTestUtils.setField(dtoConverter, "modelMapper", new ModelMapper());
+        dtoConverter = new DTOConverter(new ModelMapper(), roleService);
     }
 
-    // USER TESTS
+    //User test
     @Test
     void shouldConvertUserToUserDTO() {
         User user = new User();
@@ -49,7 +44,7 @@ class DTOConverterTest {
         assertEquals("Doe", dto.getLastName());
     }
 
-    // REFERENCE TESTS
+    // Reference Test
     @Test
     void shouldConvertArticleReference() {
 
@@ -69,7 +64,7 @@ class DTOConverterTest {
         ArticleReferenceDTO dto = (ArticleReferenceDTO) dtoConverter.toReferenceDTO(articleReference);
 
         assertNotNull(dto);
-        assertTrue(dto instanceof ArticleReferenceDTO);
+        assertInstanceOf(ArticleReferenceDTO.class, dto);
 
         assertEquals("Article Title", dto.getTitle());
         assertEquals("2020", dto.getYear());
@@ -95,7 +90,7 @@ class DTOConverterTest {
         BookLetReferenceDTO dto = (BookLetReferenceDTO) dtoConverter.toReferenceDTO(bookLetReference);
 
         assertNotNull(dto);
-        assertTrue(dto instanceof BookLetReferenceDTO);
+        assertInstanceOf(BookLetReferenceDTO.class, dto);
 
         assertEquals("Booklet Title", dto.getTitle());
         assertEquals("2021", dto.getYear());
@@ -124,7 +119,7 @@ class DTOConverterTest {
         BookReferenceDTO dto = (BookReferenceDTO) dtoConverter.toReferenceDTO(bookReference);
 
         assertNotNull(dto);
-        assertTrue(dto instanceof BookReferenceDTO);
+        assertInstanceOf(BookReferenceDTO.class, dto);
 
         assertEquals("Book Title", dto.getTitle());
         assertEquals("Garcia,Juan", dto.getAuthor());
@@ -149,7 +144,7 @@ class DTOConverterTest {
                 (BookSectionReferenceDTO) dtoConverter.toReferenceDTO(bookSectionReference);
 
         assertNotNull(dto);
-        assertTrue(dto instanceof BookSectionReferenceDTO);
+        assertInstanceOf(BookSectionReferenceDTO.class, dto);
 
         assertEquals("Section Title", dto.getTitle());
         assertEquals("Garcia,Juan", dto.getAuthor());
@@ -230,8 +225,23 @@ class DTOConverterTest {
 
         Reference unknown = new Reference() {};
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            dtoConverter.toReferenceDTO(unknown);
-        });
+        assertThrows(IllegalArgumentException.class,
+                () -> dtoConverter.toReferenceDTO(unknown)
+        );
+    }
+
+    @Test
+    void shouldUseCorrectDTOClassFromRegistry() {
+
+        ArticleReference entity = new ArticleReference();
+
+        ModelMapper mapper = new ModelMapper();
+
+        DTOConverter converter = new DTOConverter(mapper, null);
+
+        ReferenceDTO result = converter.toReferenceDTO(entity);
+
+        assertNotNull(result);
+        assertInstanceOf(ArticleReferenceDTO.class, result);
     }
 }
