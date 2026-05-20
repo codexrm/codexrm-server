@@ -35,7 +35,7 @@ class JwtUtilsTest {
         );
     }
 
-    // GENERATE TOKEN
+    // Generate Token
     @Test
     void shouldGenerateJwtToken() {
         String token = jwtUtils.generateJwtToken(userDetails);
@@ -44,7 +44,7 @@ class JwtUtilsTest {
         assertFalse(token.isEmpty());
     }
 
-    // VALID TOKEN
+    // Valid Token
     @Test
     void shouldValidateValidJwtToken() {
         String token = jwtUtils.generateJwtToken(userDetails);
@@ -54,7 +54,7 @@ class JwtUtilsTest {
         assertTrue(isValid);
     }
 
-    // EXPIRED TOKEN
+    // Expired Token
     @Test
     void shouldFailValidationForExpiredToken() throws InterruptedException {
 
@@ -67,7 +67,7 @@ class JwtUtilsTest {
         assertFalse(isValid);
     }
 
-    // INVALID TOKEN
+    // Invalid Token
     @Test
     void shouldFailValidationForInvalidToken() {
         String invalidToken = "this.is.not.a.valid.token";
@@ -77,7 +77,7 @@ class JwtUtilsTest {
         assertFalse(isValid);
     }
 
-    // GET USERNAME
+    // Get Username
     @Test
     void shouldExtractUsernameFromToken() {
         String token = jwtUtils.generateJwtToken(userDetails);
@@ -85,5 +85,18 @@ class JwtUtilsTest {
         String username = jwtUtils.getUserNameFromJwtToken(token);
 
         assertEquals("testuser", username);
+    }
+
+    // Tampered Token
+    @Test
+    void shouldFailValidationForTamperedToken() {
+
+        String token = jwtUtils.generateJwtToken(userDetails);
+
+        String tamperedToken = token + "tampered";
+
+        boolean isValid = jwtUtils.validateJwtToken(tamperedToken);
+
+        assertFalse(isValid);
     }
 }
