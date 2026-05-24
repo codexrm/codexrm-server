@@ -167,6 +167,21 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Get user details")
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<UserDTO> getMe() {
+
+        UserDetailsImpl userDetails =
+                (UserDetailsImpl) SecurityContextHolder.getContext()
+                        .getAuthentication()
+                        .getPrincipal();
+
+        User user = userService.get(userDetails.getId());
+
+        return ResponseEntity.ok(dtoConverter.toUserDTO(user));
+    }
+
     private boolean isAdmin(UserDetailsImpl userDetails) {
         return userDetails.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
