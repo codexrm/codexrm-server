@@ -25,11 +25,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -77,34 +80,49 @@ public class AuthController {
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
-        String jwt = jwtUtils.generateJwtToken(userDetails);
+            String jwt = jwtUtils.generateJwtToken(userDetails);
 
-        List<String> roles = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList());
+            List<String> roles = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
 
-        Date tokenDate = new Date(System.currentTimeMillis() + jwtUtils.getJwtExpirationMs());
-        Date refreshTokenDate = Date.from(refreshToken.getExpiryDate());
+            Date tokenDate = new Date(System.currentTimeMillis() + jwtUtils.getJwtExpirationMs());
+            Date refreshTokenDate = Date.from(refreshToken.getExpiryDate());
 
-        return ResponseEntity.ok(new JwtResponse(
-                jwt,
-                refreshToken.getToken(),
-                tokenDate,
-                refreshTokenDate,
-                userDetails.getId(),
-                userDetails.getUsername(),
-                userDetails.getEmail(),
-                userDetails.getName(),
-                userDetails.getLastName(),
-                userDetails.isEnabled(),
-                roles));
+            return ResponseEntity.ok(new JwtResponse(
+                    jwt,
+                    refreshToken.getToken(),
+                    tokenDate,
+                    refreshTokenDate,
+                    userDetails.getId(),
+                    userDetails.getUsername(),
+                    userDetails.getEmail(),
+                    userDetails.getName(),
+                    userDetails.getLastName(),
+                    userDetails.isEnabled(),
+                    roles));
+
+        } catch (AuthenticationException e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(
+                            Instant.now(),
+                            HttpStatus.UNAUTHORIZED.value(),
+                            HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                            "Invalid username or password",
+                            "/api/auth/signin"
+                    ));
+        }
+
     }
 
     @Operation(summary = "Refresh access token")

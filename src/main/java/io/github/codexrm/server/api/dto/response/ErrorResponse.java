@@ -3,6 +3,7 @@ package io.github.codexrm.server.api.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.http.HttpStatus;
 
 import java.time.Instant;
 
@@ -33,4 +34,6 @@ public class ErrorResponse {
         this.message = message;
         this.path = path;
     }
+
+
 }
