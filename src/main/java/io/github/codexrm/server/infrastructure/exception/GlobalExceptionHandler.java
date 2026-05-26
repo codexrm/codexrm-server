@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidOperationException.class)
     public ResponseEntity<ErrorResponse> handleInvalidOperation(InvalidOperationException ex, HttpServletRequest request) {
 
-        return buildErrorResponse(ex, request, HttpStatus.BAD_REQUEST);
+        return buildErrorResponse(ex, request, HttpStatus.FORBIDDEN);
     }
 
     //  400 - Illegal arguments
