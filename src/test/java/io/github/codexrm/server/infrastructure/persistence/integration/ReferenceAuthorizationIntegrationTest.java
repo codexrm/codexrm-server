@@ -101,7 +101,7 @@ public class ReferenceAuthorizationIntegrationTest extends BaseIntegrationTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
-        return response.getBody(); // assuming it returns JSON with id or similar
+        return response.getBody();
     }
 
     // Test
