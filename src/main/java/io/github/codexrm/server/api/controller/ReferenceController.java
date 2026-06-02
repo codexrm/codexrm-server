@@ -214,12 +214,12 @@ public class ReferenceController {
         List<Reference> newList = dtoConverter.toReferenceList(library.getNewReferencesList(), user);
         List<Reference> updateList = dtoConverter.toReferenceList(library.getUpdatedReferencesList(), user);
 
-        referenceService.sync(newList, updateList, library.getDeletedReferencesList());
+        referenceService.sync(user, newList, updateList, library.getDeletedReferencesList());
 
         SortReference sort = library.getSortReference();
         if (sort == null) sort = SortReference.idDesc;
 
-        Page<Reference> result = referenceService.getAll(user, author, title, page, size, library.getSortReference());
+        Page<Reference> result = referenceService.getAll(user, author, title, page, size, sort);
 
         if (result.getContent().isEmpty()) return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
