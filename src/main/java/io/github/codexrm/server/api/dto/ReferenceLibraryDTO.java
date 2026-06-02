@@ -2,6 +2,7 @@ package io.github.codexrm.server.api.dto;
 
 import io.github.codexrm.server.domain.enums.SortReference;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,19 +17,23 @@ public class ReferenceLibraryDTO {
     @Schema(
             description = "List of new references to be created",
             example = "[{ \"referenceType\": \"ArticleReferenceDTO\", \"title\": \"Deep Learning\", \"year\": \"2016\" }]")
+    @Valid
     private List<ReferenceDTO> newReferencesList;
 
     @Schema(
             description = "List of references to be updated",
             example = "[{ \"id\": 1, \"referenceType\": \"BookReferenceDTO\", \"title\": \"Clean Code\", \"year\": \"2008\" }]")
+    @Valid
     private List<ReferenceDTO> updatedReferencesList;
 
     @Schema(
             description = "List of reference IDs that should be deleted",
             example = "[1, 2, 3]")
+    @Valid
     private List<Integer> deletedReferencesList;
 
     @Schema( description = "Sorting configuration applied after synchronization")
+    @Valid
     private SortReference sortReference;
 
     public ReferenceLibraryDTO() {

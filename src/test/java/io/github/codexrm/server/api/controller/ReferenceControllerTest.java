@@ -213,7 +213,7 @@ class ReferenceControllerTest {
 
         when(userService.get(1)).thenReturn(user);
         when(dtoConverter.toReferenceList(any(), any())).thenReturn(List.of());
-        doNothing().when(referenceService).sync(any(), any(), any());
+        doNothing().when(referenceService).sync(user, any(), any(), any());
         when(referenceService.getAll(any(), any(), any(), anyInt(), anyInt(), any()))
                 .thenReturn(page);
 
@@ -242,7 +242,7 @@ class ReferenceControllerTest {
 
         when(userService.get(1)).thenReturn(user);
         when(dtoConverter.toReferenceList(any(), any())).thenReturn(List.of());
-        doNothing().when(referenceService).sync(any(), any(), any());
+        doNothing().when(referenceService).sync(user, any(), any(), any());
         when(referenceService.getAll(any(), any(), any(), anyInt(), anyInt(), any()))
                 .thenReturn(Page.empty());
 

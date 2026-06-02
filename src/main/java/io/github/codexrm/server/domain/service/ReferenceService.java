@@ -80,16 +80,29 @@ public class ReferenceService {
         referenceRepository.delete(reference);
     }
 
-    public void sync(List<Reference> newReferenceList, List<Reference> updateReferenceList, List<Integer> deleteReferenceList) {
+    public void sync(User user, List<Reference> newReferenceList, List<Reference> updateReferenceList, List<Integer> deleteReferenceList) {
 
-        for (Reference reference : newReferenceList)
-            add(reference);
+        if (newReferenceList != null) {
+            for (Reference reference : newReferenceList) {
+                add(reference);
+            }
+        }
 
-        for (Reference reference : updateReferenceList)
-            update(reference);
+        if (updateReferenceList != null) {
+            for (Reference reference : updateReferenceList) {
+                Reference existing = get(reference.getId());
+                validateOwnership(user.getId(), existing);
+                update(reference);
+            }
+        }
 
-        for (Integer id : deleteReferenceList)
-            delete(id);
+        if (deleteReferenceList != null) {
+            for (Integer id : deleteReferenceList) {
+                Reference existing = get(id);
+                validateOwnership(user.getId(), existing);
+                delete(id);
+            }
+        }
     }
 
     public ArrayList<Reference> importReferences(String path, String format) throws IOException, ParseException {
