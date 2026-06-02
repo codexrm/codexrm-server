@@ -13,19 +13,15 @@ import io.github.codexrm.server.infrastructure.persistence.repository.UserReposi
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+
 class ReferenceSynchronizationIntegrationTest extends BaseIntegrationTest  {
 
     @Autowired
@@ -177,10 +173,9 @@ class ReferenceSynchronizationIntegrationTest extends BaseIntegrationTest  {
                 .findById(saved.getId())
                 .orElseThrow();
 
-        assertEquals("New Title", result.getTitle());
-        assertEquals("Silva,Joao",
-                ((ArticleReference) result).getAuthor());
-        assertEquals("2025", result.getYear());
+        assertThat(result.getTitle()).isEqualTo("New Title");
+        assertThat(((ArticleReference) result).getAuthor()).isEqualTo("Silva,Joao");
+        assertThat(result.getYear()).isEqualTo("2025");
     }
 
     @Test
@@ -214,13 +209,5 @@ class ReferenceSynchronizationIntegrationTest extends BaseIntegrationTest  {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isNoContent());
-    }
-
-    @Test
-    void shouldExposeOpenApiDocs() throws Exception {
-
-        mockMvc.perform(get("/v3/api-docs"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
     }
 }

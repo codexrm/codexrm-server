@@ -4,9 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.codexrm.server.api.dto.request.LoginRequest;
 import io.github.codexrm.server.api.dto.request.SignupRequest;
-import io.github.codexrm.server.infrastructure.persistence.repository.ReferenceRepository;
-import io.github.codexrm.server.infrastructure.persistence.repository.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -33,12 +30,6 @@ public class ReferenceFlowIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private ReferenceRepository referenceRepository;
 
     @Test
     void shouldCompleteFullReferenceFlow() throws Exception {
@@ -72,7 +63,6 @@ public class ReferenceFlowIntegrationTest extends BaseIntegrationTest {
                         String.class
                 );
 
-        System.out.println(response.getBody());
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 

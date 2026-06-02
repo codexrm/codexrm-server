@@ -12,7 +12,6 @@ import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 public class AuthIntegrationTest extends BaseIntegrationTest{
@@ -22,6 +21,7 @@ public class AuthIntegrationTest extends BaseIntegrationTest{
 
     @LocalServerPort
     private int port;
+
 
     private String url(String path) {
         return "http://localhost:" + port + path;
@@ -84,7 +84,7 @@ public class AuthIntegrationTest extends BaseIntegrationTest{
                         String.class
                 );
 
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test
