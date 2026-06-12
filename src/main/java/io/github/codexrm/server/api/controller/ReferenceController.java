@@ -48,7 +48,7 @@ import java.util.*;
 @Tag(name = "References", description = "Reference management operations")
 public class ReferenceController {
 
-    private static final String UPLOADED_FOLDER = "/app/tempUpload";
+    private static final String UPLOADED_FOLDER = System.getProperty("java.io.tmpdir") + "/tempUpload";
 
     private final ReferenceService referenceService;
     private final UserService userService;
