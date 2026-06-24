@@ -15,6 +15,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: codexrm_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -51,8 +66,16 @@ jobs:
           </settings>
           EOF
 
-      - name: Build and run tests
+      - name: Build and run unit tests
         run: mvn clean test
+
+      - name: Run critical integration suite
+        run: mvn failsafe:integration-test failsafe:verify
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/codexrm_test
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgres
+          SPRING_PROFILES_ACTIVE: test,integration
 
       - name: Upload test reports
         if: always()
@@ -61,3 +84,4 @@ jobs:
           name: test-reports
           path: |
             **/target/surefire-reports/**
+            **/target/failsafe-reports/**
