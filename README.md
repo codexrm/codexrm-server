@@ -13,6 +13,12 @@ The system uses JWT-based authentication and a Last Write Wins synchronization s
 
 ---
 
+## Documentation
+
+- [CI Validation Workflow](docs/ci-validation.md)
+
+---
+
 ## Features
 
 ### Reference Management
