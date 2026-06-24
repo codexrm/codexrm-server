@@ -116,6 +116,13 @@ Key architectural decisions:
 
 ---
 
+## Additional Documentation
+
+- [CI Validation Workflow](docs/ci-validation.md)
+- [CI Strategy for Multi-Repository Architecture](docs/ci-strategy.md)
+
+---
+
 ## Running the Project
 
 ### Prerequisites
