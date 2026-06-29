@@ -2,6 +2,7 @@ package io.github.codexrm.server.domain.service;
 
 import io.github.codexrm.server.component.DTOConverter;
 import io.github.codexrm.server.api.dto.UserDTO;
+import io.github.codexrm.server.domain.enums.ERole;
 import io.github.codexrm.server.domain.enums.SortUser;
 import io.github.codexrm.server.infrastructure.exception.DuplicateResourceException;
 import io.github.codexrm.server.infrastructure.exception.InvalidOperationException;
@@ -82,7 +83,7 @@ public class UserService {
 
         if (isUser) roles = roleService.resolveRoles(List.of("ROLE_USER"));
 
-         else roles = roleService.resolveRoles(roleList);
+        else roles = roleService.resolveRoles(roleList);
 
         user.setRoles(roles);
         return add(user);
@@ -108,7 +109,7 @@ public class UserService {
 
         if (user.getId() == null) throw new InvalidOperationException("User ID must not be null for update");
 
-        get(user.getId());
+        ensureTargetIsNotAdmin(user.getId());
 
         return userRepository.save(user);
     }
@@ -144,8 +145,20 @@ public class UserService {
     }
 
     public void delete(Integer id) {
+        ensureTargetIsNotAdmin(id);
         User user = get(id);
         userRepository.delete(user);
+    }
+
+
+    private void ensureTargetIsNotAdmin(Integer targetId) {
+        User target = get(targetId);
+        boolean targetIsAdmin = target.getRoles().stream()
+                .anyMatch(r -> r.getName() == ERole.ROLE_ADMIN);
+        if (targetIsAdmin) {
+            throw new InvalidOperationException(
+                    "Admins cannot modify or delete other admin accounts");
+        }
     }
 
     public void validateUniqueUser(String username, String email) {

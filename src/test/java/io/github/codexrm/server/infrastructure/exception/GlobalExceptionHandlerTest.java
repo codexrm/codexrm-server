@@ -1,100 +1,122 @@
 package io.github.codexrm.server.infrastructure.exception;
 
 import io.github.codexrm.server.api.dto.response.ErrorResponse;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BeanPropertyBindingResult;
-import org.springframework.validation.FieldError;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.core.MethodParameter;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.lang.reflect.Method;
+import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+@RestControllerAdvice
+ class GlobalExceptionHandler {
 
-class GlobalExceptionHandlerTest {
+    // 404 - Resource not found (custom)
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
 
-    private GlobalExceptionHandler handler;
-    private HttpServletRequest request;
-
-    @BeforeEach
-    void setUp() {
-        handler = new GlobalExceptionHandler();
-        request = mock(HttpServletRequest.class);
-        when(request.getRequestURI()).thenReturn("/api/test");
+        return buildErrorResponse(ex, request, HttpStatus.NOT_FOUND);
     }
 
-    @Test
-    void shouldHandleResourceNotFound() {
-        ResourceNotFoundException ex =
-                new ResourceNotFoundException("User", "name", request);
+    // 404 - JPA EntityNotFoundException
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEntityNotFound(EntityNotFoundException ex, HttpServletRequest request) {
 
-        ResponseEntity<ErrorResponse> response =
-                handler.handleResourceNotFound(ex, request);
-
-        assertEquals(404, response.getStatusCode().value());
-
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().getMessage().contains("User"));
-        assertTrue(response.getBody().getMessage().contains("not found"));
-
-        assertEquals("/api/test", response.getBody().getPath());
+        return buildErrorResponse(ex, request, HttpStatus.NOT_FOUND);
     }
 
-    @Test
-    void shouldHandleDuplicateResource() {
-        DuplicateResourceException ex =
-                new DuplicateResourceException("Email", "email", request);
+    // 409 - Duplicate resource
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateResource(DuplicateResourceException ex, HttpServletRequest request) {
 
-        ResponseEntity<ErrorResponse> response =
-                handler.handleDuplicateResource(ex, request);
-
-        assertEquals(409, response.getStatusCode().value());
-
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().getMessage().contains("Email"));
-        assertTrue(response.getBody().getMessage().contains("already exists"));
+        return buildErrorResponse(ex, request, HttpStatus.CONFLICT);
     }
 
-    @Test
-    void shouldHandleGenericException() {
-        Exception ex = new Exception("Unexpected error");
+    // 403 - Invalid operation / ownership violation (custom)
+    @ExceptionHandler(InvalidOperationException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidOperation(InvalidOperationException ex, HttpServletRequest request) {
 
-        ResponseEntity<ErrorResponse> response =
-                handler.handleGenericException(ex, request);
-
-        assertEquals(500, response.getStatusCode().value());
-        assertEquals("Unexpected error", response.getBody().getMessage());
+        return buildErrorResponse(ex, request, HttpStatus.FORBIDDEN);
     }
 
-    @Test
-    void shouldHandleValidationErrors() throws Exception {
+    //  400 - Illegal arguments
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
 
-        Object target = new Object();
-        BeanPropertyBindingResult bindingResult =
-                new BeanPropertyBindingResult(target, "object");
-
-        bindingResult.addError(
-                new FieldError("object", "email", "must not be blank"));
-
-        Method method = this.getClass().getDeclaredMethod("dummyMethod", String.class);
-
-        MethodArgumentNotValidException ex =
-                new MethodArgumentNotValidException(
-                        new MethodParameter(method, 0),
-                        bindingResult);
-
-        ResponseEntity<ErrorResponse> response =
-                handler.handleValidationErrors(ex, request);
-
-        assertEquals(400, response.getStatusCode().value());
-        assertTrue(response.getBody()
-                .getMessage()
-                .contains("email: must not be blank"));
+        return buildErrorResponse(ex, request, HttpStatus.BAD_REQUEST);
     }
 
-    private void dummyMethod(String value) {}
+    // 403 - Token refresh error
+    @ExceptionHandler(TokenRefreshException.class)
+    public ResponseEntity<ErrorResponse> handleTokenRefreshException(TokenRefreshException ex, HttpServletRequest request) {
+
+        return buildErrorResponse(ex, request, HttpStatus.FORBIDDEN);
+    }
+
+    // 403 - Access denied (Spring Security)
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+
+        return buildErrorResponse(ex, request, HttpStatus.FORBIDDEN);
+    }
+
+    // 400 - @Valid validation errors
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex, HttpServletRequest request) {
+
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .findFirst()
+                .orElse("Validation error");
+
+        ErrorResponse error = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                message,
+                request.getRequestURI()
+        );
+
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    // 500 - fallback
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
+
+        return buildErrorResponse(ex, request, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // 401 - Invalid credentials
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentials(
+            BadCredentialsException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                ex,
+                request,
+                HttpStatus.UNAUTHORIZED
+        );
+    }
+
+    //HELPER
+    private ResponseEntity<ErrorResponse> buildErrorResponse(Exception ex, HttpServletRequest request, HttpStatus status) {
+
+        ErrorResponse error = new ErrorResponse(
+                Instant.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(error, status);
+    }
 }
