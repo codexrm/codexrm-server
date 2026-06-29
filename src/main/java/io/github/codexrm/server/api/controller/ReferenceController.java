@@ -125,8 +125,8 @@ public class ReferenceController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferenceDTO> getById(
-                    @Parameter(description = "Reference ID", required = true)
-                    @PathVariable("id") Integer id)  {
+            @Parameter(description = "Reference ID", required = true)
+            @PathVariable("id") Integer id)  {
 
         User user = getAuthenticatedUser();
         Reference reference = referenceService.get(id);
@@ -150,6 +150,12 @@ public class ReferenceController {
     }
 
     @Operation(summary = "Update a reference")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Reference updated successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Reference not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ReferenceDTO> update(
@@ -157,6 +163,8 @@ public class ReferenceController {
             @Valid @RequestBody ReferenceDTO referenceDTO) {
 
         User user = getAuthenticatedUser();
+        Reference existing = referenceService.get(id);
+        referenceService.validateOwnership(user.getId(), existing);
         referenceDTO.setId(id);
         Reference reference = dtoConverter.toReference(referenceDTO, user);
         Reference updated = referenceService.update(reference);

@@ -12,6 +12,7 @@ import io.github.codexrm.server.api.dto.response.ErrorResponse;
 import io.github.codexrm.server.api.dto.response.MessageResponse;
 import io.github.codexrm.server.infrastructure.security.services.UserDetailsImpl;
 import io.github.codexrm.server.domain.service.UserService;
+import io.github.codexrm.server.infrastructure.exception.InvalidOperationException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -82,7 +83,7 @@ public class UserController {
             return ResponseEntity.ok(dtoConverter.toUserDTO(userService.get(id)));
         }
 
-        return ResponseEntity.status(403).build();
+        throw new InvalidOperationException("You do not have permission to access this resource");
     }
 
     @Operation(summary = "Create a new user")

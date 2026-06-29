@@ -221,4 +221,117 @@ public class ReferenceAuthorizationIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode())
                 .isEqualTo(HttpStatus.OK);
     }
+
+    @Test
+    void userShouldNotUpdateOtherUsersReference() throws Exception {
+
+        String tokenA = signupAndLogin("userG", "g@test.com");
+        String tokenB = signupAndLogin("userH", "h@test.com");
+
+        HttpHeaders headersA = authHeaders(tokenA);
+        HttpHeaders headersB = authHeaders(tokenB);
+
+        String refJson = createReference(headersA, "Original Title");
+        JsonNode node = objectMapper.readTree(refJson);
+        String id = node.get("id").asText();
+
+        String updateBody = """
+                {
+                  "title": "Hacked Title",
+                  "year": "2020",
+                  "month": "jan",
+                  "note": "tampered",
+                  "referenceType": "WebPageReferenceDTO",
+                  "author": "Hacker,Evil",
+                  "url": "https://evil.com"
+                }
+                """;
+
+        HttpEntity<String> entity = new HttpEntity<>(updateBody, headersB);
+
+        ResponseEntity<String> response =
+                restTemplate.exchange(
+                        url("/api/references/" + id),
+                        HttpMethod.PUT,
+                        entity,
+                        String.class
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void userShouldNotAccessAnotherUsersProfile() throws Exception {
+
+        String tokenA = signupAndLogin("userI", "i@test.com");
+        String tokenB = signupAndLogin("userJ", "j@test.com");
+
+        // Get userI's ID
+        ResponseEntity<String> meResponse =
+                restTemplate.exchange(
+                        url("/api/users/me"),
+                        HttpMethod.GET,
+                        new HttpEntity<>(authHeaders(tokenA)),
+                        String.class
+                );
+        assertThat(meResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        JsonNode meNode = objectMapper.readTree(meResponse.getBody());
+        String userAId = meNode.get("id").asText();
+
+        // userB tries to access userA's profile
+        ResponseEntity<String> response =
+                restTemplate.exchange(
+                        url("/api/users/" + userAId),
+                        HttpMethod.GET,
+                        new HttpEntity<>(authHeaders(tokenB)),
+                        String.class
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void unauthorizedUserShouldBeBlockedOnUsersEndpoint() {
+
+        ResponseEntity<String> response =
+                restTemplate.getForEntity(url("/api/users/1"), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void ownerShouldUpdateOwnReference() throws Exception {
+
+        String token = signupAndLogin("ownerUpdate", "ownerupdate@test.com");
+        HttpHeaders headers = authHeaders(token);
+
+        String refJson = createReference(headers, "Original");
+        JsonNode node = objectMapper.readTree(refJson);
+        String id = node.get("id").asText();
+
+        String updateBody = """
+                {
+                  "title": "Updated Title",
+                  "year": "2021",
+                  "month": "feb",
+                  "note": "updated note",
+                  "referenceType": "WebPageReferenceDTO",
+                  "author": "Author,Valid",
+                  "url": "https://valid.com"
+                }
+                """;
+
+        HttpEntity<String> entity = new HttpEntity<>(updateBody, headers);
+
+        ResponseEntity<String> response =
+                restTemplate.exchange(
+                        url("/api/references/" + id),
+                        HttpMethod.PUT,
+                        entity,
+                        String.class
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("Updated Title");
+    }
 }
