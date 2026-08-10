@@ -202,6 +202,9 @@ Services started:
 | SPRING_DATASOURCE_URL | PostgreSQL connection URL | jdbc:postgresql://db:5432/codexrm |
 | SPRING_DATASOURCE_USERNAME | Database username | codexrm                           |
 | SPRING_DATASOURCE_PASSWORD | Database password | codexrm                           |
+| JWT_SECRET | Secret key used to sign JWT tokens (min. 64 chars) | *(required, no default)* |
+| CORS_ALLOWED_ORIGINS | Comma-separated list of allowed CORS origins | *(required, no default)* |
+| ADMIN_INITIAL_PASSWORD | Password for the initial admin user created on first startup | *(required, no default)* |
 
 ---
 
