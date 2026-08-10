@@ -37,8 +37,13 @@ public class DataInitializer {
 
             Role adminRole = adminRoleOpt.get();
 
-            User admin = new User("admin", "Admin", "System", "admin@codexrm.com", true, encoder.encode("Adm!123"));
+            String initialPassword = System.getenv("ADMIN_INITIAL_PASSWORD");
+            if (initialPassword == null || initialPassword.isBlank()) {
+                throw new IllegalStateException(
+                        "ADMIN_INITIAL_PASSWORD environment variable must be set to create the initial admin user.");
+            }
 
+            User admin = new User("admin", "Admin", "System", "admin@codexrm.com", true, encoder.encode(initialPassword));
             Set<Role> roles = new HashSet<>();
             roles.add(adminRole);
 
