@@ -3,120 +3,107 @@ package io.github.codexrm.server.infrastructure.exception;
 import io.github.codexrm.server.api.dto.response.ErrorResponse;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.Instant;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-@RestControllerAdvice
- class GlobalExceptionHandler {
+class GlobalExceptionHandlerTest {
 
-    // 404 - Resource not found (custom)
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
+    private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
+    private HttpServletRequest request;
 
-        return buildErrorResponse(ex, request, HttpStatus.NOT_FOUND);
+    @BeforeEach
+    void setUp() {
+        request = mock(HttpServletRequest.class);
+        when(request.getRequestURI()).thenReturn("/api/references/1");
     }
 
-    // 404 - JPA EntityNotFoundException
-    @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleEntityNotFound(EntityNotFoundException ex, HttpServletRequest request) {
+    @Test
+    void resourceNotFoundMapsTo404() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleResourceNotFound(new ResourceNotFoundException("Reference", "id", 1), request);
 
-        return buildErrorResponse(ex, request, HttpStatus.NOT_FOUND);
+        assertStatus(response, HttpStatus.NOT_FOUND);
     }
 
-    // 409 - Duplicate resource
-    @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateResource(DuplicateResourceException ex, HttpServletRequest request) {
+    @Test
+    void entityNotFoundMapsTo404() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleEntityNotFound(new EntityNotFoundException("not found"), request);
 
-        return buildErrorResponse(ex, request, HttpStatus.CONFLICT);
+        assertStatus(response, HttpStatus.NOT_FOUND);
     }
 
-    // 403 - Invalid operation / ownership violation (custom)
-    @ExceptionHandler(InvalidOperationException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidOperation(InvalidOperationException ex, HttpServletRequest request) {
+    @Test
+    void duplicateResourceMapsTo409() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleDuplicateResource(new DuplicateResourceException("User", "username", "bob"), request);
 
-        return buildErrorResponse(ex, request, HttpStatus.FORBIDDEN);
+        assertStatus(response, HttpStatus.CONFLICT);
     }
 
-    //  400 - Illegal arguments
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
+    @Test
+    void invalidOperationOwnershipViolationMapsTo403() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleInvalidOperation(
+                        new InvalidOperationException("You do not have permission to access this resource"),
+                        request);
 
-        return buildErrorResponse(ex, request, HttpStatus.BAD_REQUEST);
+        assertStatus(response, HttpStatus.FORBIDDEN);
     }
 
-    // 403 - Token refresh error
-    @ExceptionHandler(TokenRefreshException.class)
-    public ResponseEntity<ErrorResponse> handleTokenRefreshException(TokenRefreshException ex, HttpServletRequest request) {
+    @Test
+    void illegalArgumentMapsTo400() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleIllegalArgument(new IllegalArgumentException("bad input"), request);
 
-        return buildErrorResponse(ex, request, HttpStatus.FORBIDDEN);
+        assertStatus(response, HttpStatus.BAD_REQUEST);
     }
 
-    // 403 - Access denied (Spring Security)
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+    @Test
+    void tokenRefreshExceptionMapsTo403() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleTokenRefreshException(
+                        new TokenRefreshException("token", "expired"), request);
 
-        return buildErrorResponse(ex, request, HttpStatus.FORBIDDEN);
+        assertStatus(response, HttpStatus.FORBIDDEN);
     }
 
-    // 400 - @Valid validation errors
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex, HttpServletRequest request) {
+    @Test
+    void accessDeniedMapsTo403() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleAccessDenied(new AccessDeniedException("denied"), request);
 
-        String message = ex.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .findFirst()
-                .orElse("Validation error");
-
-        ErrorResponse error = new ErrorResponse(
-                Instant.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                message,
-                request.getRequestURI()
-        );
-
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        assertStatus(response, HttpStatus.FORBIDDEN);
     }
 
-    // 500 - fallback
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
+    @Test
+    void badCredentialsMapsTo401() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleBadCredentials(new BadCredentialsException("bad credentials"), request);
 
-        return buildErrorResponse(ex, request, HttpStatus.INTERNAL_SERVER_ERROR);
+        assertStatus(response, HttpStatus.UNAUTHORIZED);
     }
 
-    // 401 - Invalid credentials
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleBadCredentials(
-            BadCredentialsException ex,
-            HttpServletRequest request) {
+    @Test
+    void genericExceptionMapsTo500() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleGenericException(new RuntimeException("boom"), request);
 
-        return buildErrorResponse(
-                ex,
-                request,
-                HttpStatus.UNAUTHORIZED
-        );
+        assertStatus(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    //HELPER
-    private ResponseEntity<ErrorResponse> buildErrorResponse(Exception ex, HttpServletRequest request, HttpStatus status) {
-
-        ErrorResponse error = new ErrorResponse(
-                Instant.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                ex.getMessage(),
-                request.getRequestURI()
-        );
-        return new ResponseEntity<>(error, status);
+    private void assertStatus(ResponseEntity<ErrorResponse> response, HttpStatus expected) {
+        assertThat(response.getStatusCode()).isEqualTo(expected);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getStatus()).isEqualTo(expected.value());
+        assertThat(response.getBody().getPath()).isEqualTo("/api/references/1");
     }
 }

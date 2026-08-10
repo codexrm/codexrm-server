@@ -21,7 +21,7 @@ class JwtUtilsTest {
         jwtUtils = new JwtUtils();
 
         ReflectionTestUtils.setField(jwtUtils, "jwtSecret", "testSecretKeytestSecretKeytestSecretKey");
-        ReflectionTestUtils.setField(jwtUtils, "jwtExpirationMs", 1000); // 1 segundo
+        ReflectionTestUtils.setField(jwtUtils, "jwtExpirationMs", 5000); // 5 segundos
 
         userDetails = new UserDetailsImpl(
                 1,
@@ -60,7 +60,7 @@ class JwtUtilsTest {
 
         String token = jwtUtils.generateJwtToken(userDetails);
 
-        Thread.sleep(1500);
+        Thread.sleep(5500);
 
         boolean isValid = jwtUtils.validateJwtToken(token);
 
