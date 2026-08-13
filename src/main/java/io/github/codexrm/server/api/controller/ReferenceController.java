@@ -50,6 +50,10 @@ public class ReferenceController {
 
     private static final String UPLOADED_FOLDER = System.getProperty("java.io.tmpdir") + "/tempUpload";
 
+    private static final List<String> ALLOWED_IMPORT_EXTENSIONS = List.of("ris", "bib", "bibtex");
+    private static final List<String> ALLOWED_IMPORT_FORMATS = List.of("RIS", "BIBTEX");
+    private static final List<String> ALLOWED_EXPORT_FORMATS = List.of("RIS", "BIBTEX");
+
     private final ReferenceService referenceService;
     private final UserService userService;
     private final DTOConverter dtoConverter;
@@ -247,21 +251,34 @@ public class ReferenceController {
 
         if (uploadFile.isEmpty()) throw new IllegalArgumentException("You must select a file!");
 
-
-        saveUploadedFile(uploadFile);
-        User user = getAuthenticatedUser();
-        File file = new File(UPLOADED_FOLDER, uploadFile.getOriginalFilename());
-
-        ArrayList<Reference> list = referenceService.importReferences(file.getPath(), format);
-
-        for (Reference r : list) {
-            r.setUser(user);
-            referenceService.add(r);
+        if (format == null || !ALLOWED_IMPORT_FORMATS.contains(format.toUpperCase())) {
+            throw new IllegalArgumentException("Unsupported import format: " + format);
         }
 
-        file.delete();
+        String originalName = Optional.ofNullable(uploadFile.getOriginalFilename()).orElse("");
+        String extension = originalName.contains(".")
+                ? originalName.substring(originalName.lastIndexOf('.') + 1).toLowerCase()
+                : "";
 
-        return ResponseEntity.ok(new MessageResponse("Reference Imported!"));
+        if (!ALLOWED_IMPORT_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("Unsupported file extension: " + extension);
+        }
+
+        File file = saveUploadedFile(uploadFile);
+
+        try {
+            User user = getAuthenticatedUser();
+            ArrayList<Reference> list = referenceService.importReferences(file.getPath(), format);
+
+            for (Reference r : list) {
+                r.setUser(user);
+                referenceService.add(r);
+            }
+
+            return ResponseEntity.ok(new MessageResponse("Reference Imported!"));
+        } finally {
+            file.delete();
+        }
     }
 
     @Operation(summary = "Export references")
@@ -272,6 +289,14 @@ public class ReferenceController {
             @RequestParam (name = "format", defaultValue = "RIS") String format,
             @Valid @RequestBody ArrayList<Integer> idList) throws IOException {
 
+        if (format == null || !ALLOWED_EXPORT_FORMATS.contains(format.toUpperCase())) {
+            throw new IllegalArgumentException("Unsupported export format: " + format);
+        }
+
+        String safeFileName = Paths.get(
+                Optional.ofNullable(fileName).orElse("file.txt")
+        ).getFileName().toString();
+
         User user = getAuthenticatedUser();
         ArrayList<Integer> filteredIds = filterUserReferences(user.getId(), idList);
 
@@ -280,21 +305,24 @@ public class ReferenceController {
             references.add(referenceService.get(id));
         }
 
-        Path path = Paths.get(UPLOADED_FOLDER, fileName);
+        String uniqueName = UUID.randomUUID() + "_" + safeFileName;
+        Path path = Paths.get(UPLOADED_FOLDER, uniqueName);
         Files.createDirectories(path.getParent());
 
         File file = new File(path.toString());
-        referenceService.exportReferences(file, references, format);
 
-        ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
+        try {
+            referenceService.exportReferences(file, references, format);
 
-        file.delete();
+            ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
-                .contentLength(resource.contentLength())
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + safeFileName + "\"")
+                    .contentLength(resource.contentLength()).contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        } finally {
+            file.delete();
+        }
     }
 
     @Operation(summary = "Get references from all users")
@@ -318,13 +346,16 @@ public class ReferenceController {
     }
 
     //FILE HANDLING
-    private void saveUploadedFile(MultipartFile file) throws IOException {
+    private File saveUploadedFile(MultipartFile file) throws IOException {
         String fileName = Optional.ofNullable(file.getOriginalFilename()).orElse("upload.tmp");
 
         fileName = Paths.get(fileName).getFileName().toString();
+        String uniqueFileName = UUID.randomUUID() + "_" + fileName;
 
-        Path path = Paths.get(UPLOADED_FOLDER, fileName);
+        Path path = Paths.get(UPLOADED_FOLDER, uniqueFileName);
         Files.createDirectories(path.getParent());
         Files.write(path, file.getBytes());
+
+        return path.toFile();
     }
 }

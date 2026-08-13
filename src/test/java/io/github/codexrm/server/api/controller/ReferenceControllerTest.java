@@ -299,6 +299,44 @@ class ReferenceControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    // Debe fallar si el formato no está soportado (400)
+    @Test
+    void shouldFailImportWhenFormatIsUnsupported() throws Exception {
+
+        MockMultipartFile file = new MockMultipartFile(
+                "uploadFile",
+                "test.ris",
+                "text/plain",
+                "content".getBytes()
+        );
+
+        mockMvc.perform(multipart("/api/references/import")
+                        .file(file)
+                        .param("format", "XML")
+                        .with(user(mockUser()))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+    }
+
+    // Debe fallar si la extensión del archivo no está permitida (400)
+    @Test
+    void shouldFailImportWhenExtensionIsUnsupported() throws Exception {
+
+        MockMultipartFile file = new MockMultipartFile(
+                "uploadFile",
+                "malicious.exe",
+                "application/octet-stream",
+                "content".getBytes()
+        );
+
+        mockMvc.perform(multipart("/api/references/import")
+                        .file(file)
+                        .param("format", "RIS")
+                        .with(user(mockUser()))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+    }
+
     // EXPORT
     // Debe exportar referencias correctamente (200)
     @Test
@@ -329,6 +367,36 @@ class ReferenceControllerTest {
                 .andExpect(status().isOk());
     }
 
+    // Debe sanitizar el fileName y evitar path traversal (200, sin escribir fuera de la carpeta temporal)
+    @Test
+    void shouldSanitizeFileNameOnExport() throws Exception {
+
+        User user = mockUserEntity();
+        Reference ref = new Reference();
+
+        when(userService.get(1)).thenReturn(user);
+        when(referenceService.get(anyInt())).thenReturn(ref);
+
+        doAnswer(invocation -> {
+            File file = invocation.getArgument(0);
+            Files.createDirectories(file.toPath().getParent());
+            Files.write(file.toPath(), "test".getBytes());
+            return null;
+        }).when(referenceService).exportReferences(any(), any(), any());
+
+        List<Integer> ids = List.of(1);
+
+        mockMvc.perform(post("/api/references/export")
+                        .with(user(mockUser()))
+                        .with(csrf())
+                        .param("fileName", "../../../../etc/passwd")
+                        .param("format", "RIS")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(ids)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("passwd")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(".."))));
+    }
     //ALL USERS
     //  Debe permitir acceso a MANAGER (200)
     @Test

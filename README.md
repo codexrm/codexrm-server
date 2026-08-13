@@ -236,6 +236,22 @@ The API returns a consistent JSON error structure for all error responses:
 
 ---
 
+## Import / Export
+
+### Import (`POST /api/references/import`)
+- Accepted formats: `RIS`, `BIBTEX` (case-insensitive).
+- Accepted file extensions: `.ris`, `.bib`, `.bibtex`.
+- Maximum file size: 10MB.
+- Files with an unsupported format or extension are rejected with 400.
+- Malformed file content (unparseable RIS/BibTeX) is rejected with 400.
+
+### Export (`POST /api/references/export`)
+- Accepted formats: `RIS`, `BIBTEX` (case-insensitive).
+- The `fileName` parameter is sanitized server-side (path components are
+  stripped) before being used to write the export file.
+
+---
+
 ## Running Tests
 
 Run all tests:
