@@ -68,6 +68,14 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void badRequestExceptionMapsTo400() {
+        ResponseEntity<ErrorResponse> response =
+                handler.handleBadRequest(new BadRequestException("Missing required fields for Reference"), request);
+
+        assertStatus(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void tokenRefreshExceptionMapsTo403() {
         ResponseEntity<ErrorResponse> response =
                 handler.handleTokenRefreshException(
@@ -90,6 +98,28 @@ class GlobalExceptionHandlerTest {
                 handler.handleBadCredentials(new BadCredentialsException("bad credentials"), request);
 
         assertStatus(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void malformedJsonMapsTo400() {
+        org.springframework.http.converter.HttpMessageNotReadableException ex =
+                mock(org.springframework.http.converter.HttpMessageNotReadableException.class);
+
+        ResponseEntity<ErrorResponse> response = handler.handleMalformedJson(ex, request);
+
+        assertStatus(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void typeMismatchMapsTo400() {
+        org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex =
+                mock(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class);
+        when(ex.getName()).thenReturn("page");
+
+        ResponseEntity<ErrorResponse> response = handler.handleTypeMismatch(ex, request);
+
+        assertStatus(response, HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().getMessage()).contains("page");
     }
 
     @Test

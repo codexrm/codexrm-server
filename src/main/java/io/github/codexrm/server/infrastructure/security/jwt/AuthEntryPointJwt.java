@@ -1,20 +1,24 @@
 package io.github.codexrm.server.infrastructure.security.jwt;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.codexrm.server.api.dto.response.ErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.Instant;
 
 @Component
 public class AuthEntryPointJwt implements AuthenticationEntryPoint {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthEntryPointJwt.class);
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @Override
     public void commence(HttpServletRequest request,
@@ -22,14 +26,19 @@ public class AuthEntryPointJwt implements AuthenticationEntryPoint {
                          AuthenticationException authException)
             throws IOException {
 
+        logger.warn("Unauthorized access attempt to {}: {}", request.getRequestURI(), authException.getMessage());
+
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
-        response.getWriter().write("""
-            {
-              "error": "Unauthorized",
-              "message": "Bad credentials"
-            }
-        """);
+        ErrorResponse error = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.UNAUTHORIZED.value(),
+                HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                "Full authentication is required to access this resource",
+                request.getRequestURI()
+        );
+
+        response.getWriter().write(objectMapper.writeValueAsString(error));
     }
 }

@@ -16,6 +16,8 @@ import java.time.Instant;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     // 404 - Resource not found (custom)
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
@@ -37,11 +39,18 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex, request, HttpStatus.CONFLICT);
     }
 
-    // 400 - Invalid operation (custom)
+    // 403 - Invalid operation (custom)
     @ExceptionHandler(InvalidOperationException.class)
     public ResponseEntity<ErrorResponse> handleInvalidOperation(InvalidOperationException ex, HttpServletRequest request) {
 
         return buildErrorResponse(ex, request, HttpStatus.FORBIDDEN);
+    }
+
+    // 400 - Bad request (custom)
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex, HttpServletRequest request) {
+
+        return buildErrorResponse(ex, request, HttpStatus.BAD_REQUEST);
     }
 
     //  400 - Illegal arguments
@@ -73,8 +82,11 @@ public class GlobalExceptionHandler {
                 .getFieldErrors()
                 .stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .findFirst()
-                .orElse("Validation error");
+                .collect(java.util.stream.Collectors.joining("; "));
+
+        if (message.isBlank()) {
+            message = "Validation error";
+        }
 
         ErrorResponse error = new ErrorResponse(
                 Instant.now(),
@@ -87,11 +99,52 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
+    // 400 - Malformed JSON body
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleMalformedJson(
+            org.springframework.http.converter.HttpMessageNotReadableException ex, HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "Malformed JSON request body",
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    // 400 - Wrong parameter type (e.g. ?page=abc)
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+
+        String message = "Invalid value for parameter '" + ex.getName() + "'";
+
+        ErrorResponse error = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                message,
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
     // 500 - fallback
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
 
-        return buildErrorResponse(ex, request, HttpStatus.INTERNAL_SERVER_ERROR);
+        logger.error("Unhandled exception at {}", request.getRequestURI(), ex);
+
+        ErrorResponse error = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                "An unexpected error occurred",
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     // 401 - Invalid credentials
