@@ -445,3 +445,50 @@ hardening gates already consumed the available time this phase.
 
 This is logged here explicitly as **Fase 2 debt** — it does not block
 the closure of Fase 1.
+
+--- 
+
+## ADR-012: Log UserService/API DTO Coupling as Fase 2 Debt
+
+### Status
+Deferred
+
+### Context
+
+While evaluating week 19's entry conditions for optional package
+restructuring, a real architectural inconsistency was found:
+`UserService` (domain layer) accepts API-layer request/response types
+directly as method parameters (`AddUserRequest`, `SignupRequest`,
+`UpdateUserPasswordRequest`, `UserDTO`), unlike `ReferenceService` and
+`RoleService`, which correctly depend only on domain-layer types. This
+contradicts ADR-007's stated goal of isolating domain models from
+external API contracts.
+
+This is not a package-location problem (the file is already correctly
+placed under `domain/service`) — it's a dependency-direction problem
+that would require changing method signatures and moving conversion
+responsibility to the controller/DTOConverter layer.
+
+### Decision
+
+Do not fix this during week 19. Week 19's restructuring PR is scoped
+to physical file moves with zero functional risk ("mover archivos y
+actualizar imports... sin cambios funcionales"); this fix requires
+changing method contracts, which is functional-adjacent and violates
+the project's own rule against mixing restructuring with fixes.
+
+This is logged as explicit Fase 2 debt instead, aligning with the
+Fase 2 preview item "evaluar si separar entity/domain tiene valor
+ahora."
+
+### Consequences
+
+#### Positive
+- Fase 1 closes without scope creep or last-minute functional risk.
+- The inconsistency is documented with enough detail (affected file,
+  affected methods, contrast with the other two services) to be
+  picked up quickly in Fase 2.
+
+#### Negative
+- `UserService` remains inconsistent with `ReferenceService` and
+  `RoleService` until Fase 2.
