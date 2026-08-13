@@ -309,3 +309,139 @@ Endpoints should include explicit documentation annotations such as:
 ```text
 docs/code-reading/springdoc-openapi.md
 ```
+
+---
+
+## ADR-009: Externalize All Secrets via Environment Variables
+
+### Status
+Accepted
+
+### Context
+
+During the security hardening phase (weeks 14-17), an audit found the
+JWT signing secret and the initial admin password hardcoded directly
+in `application-prod.properties` and `DataInitializer`, despite a
+comment claiming the secret came from an environment variable. Both
+values were already committed to git history, making them effectively
+compromised regardless of later code changes.
+
+### Decision
+
+All secrets (`JWT_SECRET`, `ADMIN_INITIAL_PASSWORD`,
+`CORS_ALLOWED_ORIGINS`) are read exclusively from environment
+variables, with no hardcoded fallback values. The application fails
+fast at startup if a required secret is missing (see `JwtUtils`'
+`@PostConstruct` validation and `DataInitializer`'s explicit null
+check). A secrets manager (e.g. Vault, AWS Secrets Manager) was
+considered but deferred — out of scope for the current deployment
+scale and infrastructure.
+
+### Consequences
+
+#### Positive
+- No secret value can be recovered from the source code or git
+  history going forward.
+- Fail-fast behavior surfaces missing configuration immediately at
+  startup instead of allowing insecure defaults to run silently.
+- Straightforward to rotate secrets without a code change.
+
+#### Negative
+- Slightly more setup friction for new environments (a `.env` file or
+  equivalent must be provisioned before the app can start).
+- No centralized secret rotation or audit trail — deferred to Fase 2
+  if the project's security requirements grow.
+
+---
+
+## ADR-010: Use `ddl-auto=validate` in Production Instead of `update`
+
+### Status
+Accepted
+
+### Context
+
+`application-prod.properties` had `spring.jpa.hibernate.ddl-auto=update`
+while `dev` correctly used `validate`. With `update`, Hibernate could
+silently alter the production schema on every startup based on entity
+mappings, bypassing Flyway's version-controlled migrations entirely
+and risking undocumented schema drift.
+
+### Decision
+
+Use `ddl-auto=validate` in both `dev` and `prod`. Hibernate only
+verifies that entity mappings match the schema Flyway already
+applied; it never generates or executes DDL itself. All schema
+changes go exclusively through versioned Flyway migration scripts.
+`test` keeps `create-drop` for speed and isolation against an
+ephemeral database.
+
+### Consequences
+
+#### Positive
+- Single source of truth for schema changes (Flyway), eliminating
+  drift between what migrations record and the real database state.
+- Any entity/schema mismatch fails the application at startup instead
+  of silently patching production.
+
+#### Negative
+- Every entity change now requires a corresponding Flyway migration
+  to be written by hand — no auto-generation shortcut during
+  development against `prod`-like validation.
+
+---
+
+## ADR-011: Standardize Error Responses Across All Failure Paths
+
+### Status
+Accepted
+
+### Context
+
+Error responses were inconsistent: some exceptions returned a shared
+`ErrorResponse` structure via `GlobalExceptionHandler`, but the JWT
+authentication entry point (401) built its own hand-written JSON with
+a different shape, and authorization denials at the security filter
+level (403) had no custom handler at all, falling back to Spring
+Security's default behavior. Some exceptions (`BadRequestException`,
+malformed JSON, oversized uploads, RIS/BibTeX parse errors) had no
+handler and fell through to a generic 500.
+
+### Decision
+
+All error paths — exceptions from controllers/services
+(`GlobalExceptionHandler`), unauthenticated requests
+(`AuthEntryPointJwt`), and authorization denials
+(`AccessDeniedHandlerImpl`) — return the same `ErrorResponse`
+structure (`timestamp`, `status`, `error`, `message`, `path`).
+Missing handlers were added for previously-uncaught exception types,
+each mapped to the correct HTTP status instead of a generic 500.
+
+### Consequences
+
+#### Positive
+- Any API consumer can rely on one consistent error shape regardless
+  of which layer rejected the request.
+- Correct HTTP status codes make client-side error handling
+  predictable (400 vs 401 vs 403 vs 413 vs 500).
+- The generic 500 handler no longer leaks raw exception messages to
+  clients; details are logged server-side only.
+
+#### Negative
+- Every new exception type introduced in the future must be
+  deliberately mapped to a handler, or it will silently fall back to
+  a generic 500 — this is a discipline requirement, not something
+  enforced automatically.
+
+---
+
+## Deferred: Exhaustive OpenAPI Audit
+
+An exhaustive audit of OpenAPI/Swagger annotation coverage and
+accuracy (beyond the basic `@Operation`/`@Schema` usage already in
+place, per ADR-008) was considered during the Fase 1 documentation
+week but not performed, as the critical suite, CI, and minimal
+hardening gates already consumed the available time this phase.
+
+This is logged here explicitly as **Fase 2 debt** — it does not block
+the closure of Fase 1.
