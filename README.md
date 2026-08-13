@@ -208,6 +208,34 @@ Services started:
 
 ---
 
+## Error Handling
+
+The API returns a consistent JSON error structure for all error responses:
+
+```json
+{
+  "timestamp": "2026-03-15T10:30:00Z",
+  "status": 404,
+  "error": "Not Found",
+  "message": "User not found with id: 1",
+  "path": "/api/users/1"
+}
+```
+
+### Status codes
+
+| Exception / Condition | HTTP Status |
+|---|---|
+| `ResourceNotFoundException`, JPA `EntityNotFoundException` | 404 Not Found |
+| `DuplicateResourceException` | 409 Conflict |
+| `BadRequestException`, `IllegalArgumentException`, malformed JSON body, invalid parameter type | 400 Bad Request |
+| `@Valid` validation errors (all field errors returned, semicolon-separated) | 400 Bad Request |
+| Missing or invalid JWT (unauthenticated request) | 401 Unauthorized |
+| `InvalidOperationException`, `TokenRefreshException`, Spring Security `AccessDeniedException` | 403 Forbidden |
+| Any unhandled exception | 500 Internal Server Error (generic message; details are logged server-side, never returned to the client) |
+
+---
+
 ## Running Tests
 
 Run all tests:

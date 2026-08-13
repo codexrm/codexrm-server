@@ -10,12 +10,12 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import io.github.codexrm.server.infrastructure.security.jwt.AuthEntryPointJwt;
 
 @Configuration
 @EnableMethodSecurity
@@ -23,11 +23,13 @@ public class WebSecurityConfig {
 
   private final UserDetailsServiceImpl userDetailsService;
   private final AuthEntryPointJwt unauthorizedHandler;
+  private final AccessDeniedHandlerImpl accessDeniedHandler;
 
   public WebSecurityConfig(UserDetailsServiceImpl userDetailsService,
-                           AuthEntryPointJwt unauthorizedHandler) {
+                           AuthEntryPointJwt unauthorizedHandler, AccessDeniedHandlerImpl accessDeniedHandler) {
     this.userDetailsService = userDetailsService;
     this.unauthorizedHandler = unauthorizedHandler;
+    this.accessDeniedHandler = accessDeniedHandler;
   }
 
   // JWT Filter
@@ -72,8 +74,9 @@ public class WebSecurityConfig {
             .csrf(csrf -> csrf.disable())
 
             .exceptionHandling(exception ->
-                    exception.authenticationEntryPoint(unauthorizedHandler))
-
+                    exception
+                            .authenticationEntryPoint(unauthorizedHandler)
+                            .accessDeniedHandler(accessDeniedHandler))
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
