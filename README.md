@@ -314,6 +314,23 @@ Postman will automatically generate a collection with all endpoints.
 
 ---
 
+## Local Validation
+
+Before opening a PR, especially for changes touching API, security,
+or configuration:
+
+1. Levantar dependencias necesarias (`docker compose up db`, o el
+   stack completo con `docker compose up --build`).
+2. Ejecutar tests unitarios (`mvn test`).
+3. Ejecutar tests de integración críticos (`mvn verify`, o
+   `mvn test -Dtest="*IntegrationTest"` para correr solo integración).
+   Ver [docs/testing.md](docs/testing.md) para el detalle de qué
+   cubre la suite crítica.
+4. Verificar Swagger UI si el cambio toca API, seguridad o configuración
+   (`http://localhost:8081/swagger-ui.html`).
+
+---
+
 ## Useful Development Commands
 
 Build the project:

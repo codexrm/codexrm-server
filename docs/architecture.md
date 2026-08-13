@@ -324,3 +324,86 @@ The architecture follows a set of design principles intended to keep the codebas
 - reduce architectural coupling
 
 ---
+
+## Error Handling
+
+All API errors are returned with a consistent JSON structure via a
+global `@RestControllerAdvice` (`GlobalExceptionHandler`):
+
+```json
+{
+  "timestamp": "2026-03-15T10:30:00Z",
+  "status": 404,
+  "error": "Not Found",
+  "message": "User not found with id: 1",
+  "path": "/api/users/1"
+}
+```
+
+This applies regardless of where the error originates:
+
+- Exceptions thrown inside controllers/services are caught by
+  `GlobalExceptionHandler`.
+- Missing/invalid JWT (401) is handled by `AuthEntryPointJwt`.
+- Authorization denials at the security filter level (403) are
+  handled by `AccessDeniedHandlerImpl`.
+
+Both handlers build the same `ErrorResponse` shape as the global
+handler, so the response format is identical no matter which layer
+rejected the request. See the full exception-to-status-code mapping
+in the [README](../README.md#error-handling).
+
+---
+
+## Database Migrations
+
+Schema changes are exclusively version-controlled with Flyway
+(`src/main/resources/db/migration`):
+
+- `V1__initial_schema.sql` — core tables (`app_user`, `rol`,
+  `user_roles`, `reference` and its per-type subtype tables,
+  `refreshtoken`).
+- `V2__insert_roles.sql` — seeds the four application roles
+  (`ROLE_USER`, `ROLE_MANAGER`, `ROLE_ADMIN`, `ROLE_AUDITOR`).
+
+`spring.jpa.hibernate.ddl-auto` is set to `validate` in both `dev`
+and `prod`: Hibernate only checks that entity mappings match the
+Flyway-managed schema at startup — it never generates or applies DDL
+itself. This keeps all schema changes exclusively under Flyway's
+control and makes any drift between entities and the real schema fail
+fast at boot, instead of silently auto-patching the database. The
+`test` profile uses `create-drop` against an ephemeral database for
+test speed and isolation.
+
+---
+
+## Initial Data Seeding
+
+- Roles are inserted by the `V2__insert_roles.sql` Flyway migration.
+- The initial `admin` user is created at application startup by
+  `DataInitializer` (`infrastructure/config`), only if a user named
+  `admin` doesn't already exist. Its password comes from the required
+  `ADMIN_INITIAL_PASSWORD` environment variable — startup fails fast
+  if it's not set. `DataInitializer` does not run under the `test`
+  profile.
+
+---
+
+## Import / Export
+
+RIS and BibTeX import/export is delegated to the external `EILibrary`
+dependency via `ImportR` and `ExportR` (`component` package), which
+convert between `EILibrary`'s format-specific models and CodexRM's
+domain `Reference` model.
+
+- Accepted formats: `RIS`, `BIBTEX`.
+- Accepted file extensions on import: `.ris`, `.bib`, `.bibtex`.
+- Uploaded and exported temp files are given a UUID prefix and are
+  always deleted after the request completes (success or failure).
+- The export `fileName` parameter is sanitized server-side before
+  being used to build a file path, to prevent path traversal.
+
+See [Import / Export](../README.md#import--export) in the README for
+the client-facing contract (accepted formats, limits, error codes).
+
+---
