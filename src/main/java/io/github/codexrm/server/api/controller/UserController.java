@@ -185,6 +185,6 @@ public class UserController {
 
     private boolean isAdmin(UserDetailsImpl userDetails) {
         return userDetails.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                .anyMatch(a -> a.getAuthority().equals(io.github.codexrm.server.domain.enums.ERole.ROLE_ADMIN.name()));
     }
 }
