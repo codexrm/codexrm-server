@@ -74,20 +74,6 @@ public class ReferenceController {
         return userService.get(userDetails.getId());
     }
 
-    private ArrayList<Integer> filterUserReferences(Integer userId, ArrayList<Integer> referenceIds) {
-        ArrayList<Integer> filtered = new ArrayList<>();
-
-        for (Integer id : referenceIds) {
-            Reference reference = referenceService.get(id);
-            try {
-                referenceService.validateOwnership(userId, reference);
-                filtered.add(id);
-            } catch (InvalidOperationException ignored) {
-            }
-        }
-        return filtered;
-    }
-
     private ReferencePageDTO buildPageDTO(Page<Reference> page) {
         if (page.getContent().isEmpty()) return null;
 
@@ -201,7 +187,7 @@ public class ReferenceController {
     public ResponseEntity<?> deleteGroup(@Valid @RequestBody ArrayList<Integer> idList) {
 
         User user = getAuthenticatedUser();
-        ArrayList<Integer> filtered = filterUserReferences(user.getId(), idList);
+        ArrayList<Integer> filtered = referenceService.filterOwnedReferences(user.getId(), idList);
         filtered.forEach(referenceService::delete);
         return ResponseEntity.ok().build();
     }
@@ -298,7 +284,7 @@ public class ReferenceController {
         ).getFileName().toString();
 
         User user = getAuthenticatedUser();
-        ArrayList<Integer> filteredIds = filterUserReferences(user.getId(), idList);
+        ArrayList<Integer> filteredIds = referenceService.filterOwnedReferences(user.getId(), idList);
 
         ArrayList<Reference> references = new ArrayList<>();
         for (Integer id : filteredIds) {

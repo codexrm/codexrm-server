@@ -178,11 +178,10 @@ class ReferenceControllerTest {
     void shouldDeleteGroupReferences() throws Exception {
 
         User user = mockUserEntity();
-        Reference ref = new Reference();
 
         when(userService.get(1)).thenReturn(user);
-        when(referenceService.get(anyInt())).thenReturn(ref);
-        doNothing().when(referenceService).validateOwnership(anyInt(), any());
+        when(referenceService.filterOwnedReferences(eq(1), any()))
+                .thenReturn(new ArrayList<>(List.of(1, 2)));
 
         List<Integer> ids = List.of(1, 2);
 

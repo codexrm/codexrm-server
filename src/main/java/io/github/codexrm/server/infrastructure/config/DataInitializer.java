@@ -30,12 +30,8 @@ public class DataInitializer {
 
             if (userRepository.existsByUsername("admin")) {return;}
 
-            Optional<Role> adminRoleOpt = roleRepository.findByName(ERole.ROLE_ADMIN);
-
-            if (adminRoleOpt.isEmpty())
-                throw new RuntimeException("Error: ROLE_ADMIN not found in database.");
-
-            Role adminRole = adminRoleOpt.get();
+            Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+                    .orElseThrow(() -> new RuntimeException("Error: ROLE_ADMIN not found in database."));
 
             String initialPassword = System.getenv("ADMIN_INITIAL_PASSWORD");
             if (initialPassword == null || initialPassword.isBlank()) {

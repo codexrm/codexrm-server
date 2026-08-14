@@ -138,6 +138,20 @@ public class ReferenceService {
             throw new InvalidOperationException("You do not have permission to access this resource");
     }
 
+    public ArrayList<Integer> filterOwnedReferences(Integer userId, ArrayList<Integer> referenceIds) {
+        ArrayList<Integer> filtered = new ArrayList<>();
+
+        for (Integer id : referenceIds) {
+            Reference reference = get(id);
+            try {
+                validateOwnership(userId, reference);
+                filtered.add(id);
+            } catch (InvalidOperationException ignored) {
+            }
+        }
+        return filtered;
+    }
+
     private Sort.Order getOrder(SortReference sort) {
 
         if (sort == null)
