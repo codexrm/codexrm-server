@@ -78,3 +78,48 @@ BUILD SUCCESS
 Any `BUILD FAILURE` on `mvn verify` before a PR should be treated as
 blocking — this is the gate referenced in the Fase 1 success criteria
 ("the pipeline stays green").
+
+
+## Fase 2 Validation Baseline
+
+This is the single, frozen definition of "green" for every PR during
+Fase 2. Same checklist locally and in CI — no ambiguity about what
+counts as passing.
+
+### Automated (CI equivalent)
+
+```bash
+mvn verify
+```
+
+Must show `BUILD SUCCESS` with the full unit + critical integration
+suite passing. This is non-negotiable for every PR, regardless of
+what it touches.
+
+### Manual smoke test (for PRs touching security, validation,
+observability, auth, import/export, or logging)
+
+Run after `mvn verify` passes, before merging:
+
+```text
+1. docker-compose down -v && docker-compose up --build
+2. Wait for: "Started ServerApplication in X seconds"
+3. POST /api/auth/signin with invalid credentials   → 401/403 consistent?
+4. GET  /api/references without JWT                 → 401?
+5. GET/DELETE /api/references/{id} owned by another user → 403 or 404 per documented policy?
+6. POST /api/auth/refreshtoken invalid/expired       → consistent response?
+7. If the PR touches rate limiting: repeat signin    → 429?
+8. If the PR touches import/export: POST with malicious filename → 400/422?
+9. If the PR touches observability: check logs       → correlation ID present, valid JSON?
+10. GET /v3/api-docs                                 → 200 OK?
+```
+
+If any step fails, the PR does not merge. If the PR only touches
+documentation or runbooks, this is stated explicitly in the PR
+description and only the relevant subset of checks is run.
+
+### 403 vs 404 policy
+
+A single policy must be picked and kept stable across equivalent
+endpoints — the problem isn't choosing one, it's mixing both without
+criteria. (Policy to be defined and documented in weeks 1-3.)

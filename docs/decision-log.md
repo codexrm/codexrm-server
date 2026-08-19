@@ -492,3 +492,88 @@ ahora."
 #### Negative
 - `UserService` remains inconsistent with `ReferenceService` and
   `RoleService` until Fase 2.
+
+---
+
+
+### Update (Fase 2, Semana 0)
+
+Al evaluar el gate de entrada de Fase 2, se revisó este ADR contra
+las 5 categorías que el gate permite como deuda consciente de Fase 2:
+auth, OWASP, observabilidad, rate limiting, runbooks.
+
+Este hallazgo no encaja en ninguna — es deuda de arquitectura general,
+no de seguridad ni operación. Se reclasifica como **backlog general**,
+candidato a Fase 3 o a cuando surja necesidad concreta de tocar
+`UserService`. No entra al alcance de las 12 semanas de Fase 2.
+
+
+---
+
+## Fase 2 Entry Decision (Gate de Semana 0)
+
+### Status
+Accepted
+
+### Context
+
+Fase 2 no empieza porque el calendario lo diga; empieza cuando la
+base de Fase 1 deja de estar abierta. El plan de Fase 2 exige
+verificar, con evidencia y no con sensación, que los criterios de
+entrada obligatorios se cumplen antes de arrancar el trabajo de
+hardening.
+
+### Verification performed (Semana 0)
+
+- `mvn verify`: 140 unit tests + 21 integration tests, `BUILD SUCCESS`
+  confirmado en fresco (no reusando evidencia de días anteriores).
+- Último run de GitHub Actions en `dev`: verde (8+ corridas
+  consecutivas en verde).
+- Búsqueda explícita de las 5 señales de "Fase 1 no cerrada" listadas
+  en el plan de Fase 2 — ninguna encontrada:
+  - Sin `WebSecurityConfigurerAdapter`.
+  - Sin `antMatchers`.
+  - Sin `@CrossOrigin("*")`.
+  - `permitAll()` existente es allowlist explícita
+    (`/api/auth/**`, swagger, `/error`), no amplia.
+  - Secrets externalizados en `application-prod.properties`
+    (`${JWT_SECRET}`, `${CORS_ALLOWED_ORIGINS}`, datasource por
+    variables), `ddl-auto=validate` confirmado.
+
+### Allowed carry-over inventory
+
+Revisados los 2 candidatos a deuda de Fase 2, evaluados contra las 5
+categorías que el gate permite (auth, OWASP, observabilidad, rate
+limiting, runbooks):
+
+- **Entra a Fase 2:** auditoría exhaustiva de OpenAPI/Swagger
+  (categoría auth — corresponde a la sección 1.3 del plan de Fase 2).
+- **No entra a Fase 2:** ADR-012 (acoplamiento `UserService`/DTOs de
+  api) — no encaja en ninguna categoría del gate. Reclasificado como
+  backlog general / candidato a Fase 3 (ver actualización en
+  ADR-012).
+
+### Frozen validation baseline
+
+El criterio único de "verde" para toda la Fase 2 queda documentado en
+`docs/testing.md`, sección "Fase 2 Validation Baseline": `mvn verify`
+como gate automatizado obligatorio, más el smoke test manual de 10
+pasos para PRs que toquen seguridad, validación, observabilidad,
+auth, import/export o logging.
+
+### Decision
+
+El gate de entrada a Fase 2 pasa. Fase 1 está cerrada con evidencia
+verificada hoy, no arrastrada de la retrospectiva anterior. Fase 2
+arranca en la Semana 1 (hardening de autorización) sobre esta base.
+
+### Consequences
+
+#### Positive
+- Fase 2 arranca sin deuda crítica de Fase 1 disfrazada de trabajo
+  nuevo.
+- Existe un único criterio de validación, usable igual en local y en
+  CI, sin ambigüedad sobre qué significa "pasa".
+
+#### Negative
+- Ninguna identificada — el gate pasó limpio en la primera revisión.
