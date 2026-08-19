@@ -492,3 +492,15 @@ ahora."
 #### Negative
 - `UserService` remains inconsistent with `ReferenceService` and
   `RoleService` until Fase 2.
+
+
+### Update (Fase 2, Semana 0)
+
+Al evaluar el gate de entrada de Fase 2, se revisó este ADR contra
+las 5 categorías que el gate permite como deuda consciente de Fase 2:
+auth, OWASP, observabilidad, rate limiting, runbooks.
+
+Este hallazgo no encaja en ninguna — es deuda de arquitectura general,
+no de seguridad ni operación. Se reclasifica como **backlog general**,
+candidato a Fase 3 o a cuando surja necesidad concreta de tocar
+`UserService`. No entra al alcance de las 12 semanas de Fase 2.
