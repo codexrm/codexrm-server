@@ -76,6 +76,20 @@ class UserControllerTest {
         );
     }
 
+    private UserDetailsImpl mockAuditor() {
+        return new UserDetailsImpl(
+                3,
+                "auditor",
+                "Auditor",
+                "Auditor",
+                "auditor@test.com",
+                true,
+                "password",
+                List.of(() -> "ROLE_AUDITOR")
+        );
+    }
+
+
     // GET /api/users
     @Test
     void shouldGetAllUsers() throws Exception {
@@ -118,6 +132,31 @@ class UserControllerTest {
                         .with(user(mockAdmin())))
                 .andExpect(status().isOk());
     }
+
+    // GET BY ID (AUDITOR puede ver cualquier usuario)
+    @Test
+    void shouldGetUserByIdAsAuditor() throws Exception {
+        User user = new User();
+        user.setId(1);
+
+        when(userService.get(1)).thenReturn(user);
+        when(dtoConverter.toUserDTO(any())).thenReturn(new UserDTO());
+
+        mockMvc.perform(get("/api/users/1")
+                        .with(user(mockAuditor())))
+                .andExpect(status().isOk());
+    }
+
+    // GET BY ID (USER normal NO puede ver a otro usuario)
+    @Test
+    void shouldForbidUserFromGettingAnotherUsersById() throws Exception {
+        mockMvc.perform(get("/api/users/999")
+                        .with(user(mockUser())))
+                .andExpect(status().isForbidden());
+    }
+
+
+
 
     // CREATE USER (ADMIN)
     @Test

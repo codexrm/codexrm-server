@@ -22,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -160,24 +161,15 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "User not authenticated",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
     @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> logoutUser() {
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails =
+                (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).body(new MessageResponse("User not authenticated"));
-        }
+        refreshTokenService.deleteByUserId(userDetails.getId());
+        SecurityContextHolder.clearContext();
 
-        Object principal = authentication.getPrincipal();
-
-        if (principal instanceof UserDetailsImpl userDetails) {
-
-            refreshTokenService.deleteByUserId(userDetails.getId());
-            SecurityContextHolder.clearContext();
-
-            return ResponseEntity.ok(new MessageResponse("Log out successful!"));
-        }
-
-        return ResponseEntity.status(401).body(new MessageResponse("Invalid authentication principal"));
+        return ResponseEntity.ok(new MessageResponse("Log out successful!"));
     }
 }
