@@ -577,3 +577,42 @@ arranca en la Semana 1 (hardening de autorización) sobre esta base.
 
 #### Negative
 - Ninguna identificada — el gate pasó limpio en la primera revisión.
+
+
+---
+
+## ADR-013: Restrict Swagger/OpenAPI Exposure in Production
+
+### Status
+Accepted
+
+### Context
+
+`/swagger-ui.html` and `/v3/api-docs` were fully public in all
+profiles, including `prod`. While no sensitive data is exposed
+directly, these routes reveal the complete API surface (every
+endpoint, parameter, and DTO shape), which is unnecessary exposure
+for a production environment with no current external consumers
+relying on public Swagger access.
+
+### Decision
+
+Swagger UI and OpenAPI JSON remain public (`permitAll()`) in `dev`
+and `test` profiles for ease of local development, but require
+authentication in `prod` — enforced via `WebSecurityConfig` checking
+the active Spring profile at startup.
+
+### Consequences
+
+#### Positive
+- API surface is no longer discoverable by anonymous requests in
+  production.
+- No change to local development experience (dev/test unaffected).
+- Verified live: a `docker compose` startup with `prod` profile
+  returns a standard `401` `ErrorResponse` for `/swagger-ui.html`
+  without a JWT.
+
+#### Negative
+- Anyone needing to consult API documentation against a production
+  deployment now needs a valid JWT first — acceptable trade-off given
+  there are no external API consumers yet.

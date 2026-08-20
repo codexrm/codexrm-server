@@ -24,12 +24,16 @@ public class WebSecurityConfig {
   private final UserDetailsServiceImpl userDetailsService;
   private final AuthEntryPointJwt unauthorizedHandler;
   private final AccessDeniedHandlerImpl accessDeniedHandler;
+  private final org.springframework.core.env.Environment environment;
 
   public WebSecurityConfig(UserDetailsServiceImpl userDetailsService,
-                           AuthEntryPointJwt unauthorizedHandler, AccessDeniedHandlerImpl accessDeniedHandler) {
+                           AuthEntryPointJwt unauthorizedHandler,
+                           AccessDeniedHandlerImpl accessDeniedHandler,
+                           org.springframework.core.env.Environment environment) {
     this.userDetailsService = userDetailsService;
     this.unauthorizedHandler = unauthorizedHandler;
     this.accessDeniedHandler = accessDeniedHandler;
+    this.environment = environment;
   }
 
   // JWT Filter
@@ -80,16 +84,26 @@ public class WebSecurityConfig {
             .sessionManagement(session ->
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(
-                            "/api/auth/**",
-                            "/swagger-ui/**",
-                            "/swagger-ui.html",
-                            "/v3/api-docs/**",
-                            "/error"
-                    ).permitAll()
-                    .anyRequest().authenticated()
-            )
+            .authorizeHttpRequests(auth -> {
+              auth.requestMatchers(
+                      "/api/auth/signup",
+                      "/api/auth/signin",
+                      "/api/auth/refresh-token",
+                      "/error"
+              ).permitAll();
+
+              boolean isProd = java.util.Arrays.asList(environment.getActiveProfiles()).contains("prod");
+
+              if (!isProd) {
+                auth.requestMatchers(
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**"
+                ).permitAll();
+              }
+
+              auth.anyRequest().authenticated();
+            })
 
             .authenticationProvider(authenticationProvider());
 

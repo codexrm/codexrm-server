@@ -79,7 +79,7 @@ public class UserController {
         UserDetailsImpl userDetails =
                 (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (userDetails.getId().equals(id) || isAdmin(userDetails)) {
+        if (userDetails.getId().equals(id) || isAdmin(userDetails) || isAuditor(userDetails)) {
             return ResponseEntity.ok(dtoConverter.toUserDTO(userService.get(id)));
         }
 
@@ -186,5 +186,10 @@ public class UserController {
     private boolean isAdmin(UserDetailsImpl userDetails) {
         return userDetails.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals(io.github.codexrm.server.domain.enums.ERole.ROLE_ADMIN.name()));
+    }
+
+    private boolean isAuditor(UserDetailsImpl userDetails) {
+        return userDetails.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals(io.github.codexrm.server.domain.enums.ERole.ROLE_AUDITOR.name()));
     }
 }
