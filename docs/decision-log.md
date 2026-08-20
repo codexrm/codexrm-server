@@ -616,3 +616,57 @@ the active Spring profile at startup.
 - Anyone needing to consult API documentation against a production
   deployment now needs a valid JWT first — acceptable trade-off given
   there are no external API consumers yet.
+
+
+---
+
+## ADR-014: Ownership Response Policy — 403 vs 404
+
+### Status
+Accepted
+
+### Context
+
+Weeks 1-3 of Fase 2 required picking one consistent policy for
+accessing another user's resource: `403 Forbidden` (resource exists,
+you can't touch it) or `404 Not Found` (resource "doesn't exist" from
+your perspective) — and applying it uniformly, since mixing both
+without criteria is the real risk, not the choice itself.
+
+Auditing `ReferenceService`/`ReferenceController` and
+`UserService`/`UserController` found the policy was already
+implemented consistently, just never documented as an explicit
+decision.
+
+### Decision
+
+Two distinct situations, two distinct responses:
+
+- **Resource doesn't exist at all** (invalid/non-existent ID) →
+  `ResourceNotFoundException` → `404 Not Found`.
+- **Resource exists but belongs to another user** →
+  `InvalidOperationException` → `403 Forbidden`.
+
+This applies identically to references (`get`, `update`, `delete`,
+`sync`, `filterOwnedReferences`) and users (`getById`).
+
+### Consequences
+
+#### Positive
+- A `403` tells a legitimate API consumer "this exists, you're not
+  allowed" — useful for debugging your own client.
+- A `404` for genuinely invalid IDs avoids confirming/denying whether
+  an ID exists for someone else's resources at the "not found" tier,
+  though it does not fully hide existence when the ID *is* valid but
+  owned by someone else (that case is explicit `403` by choice, not
+  `404`) — the trade-off accepted here favors clearer client-side
+  error handling over minimizing resource-existence disclosure.
+- No code changes required — the existing behavior was already
+  correct, just undocumented.
+
+#### Negative
+- Returning `403` instead of `404` for someone else's resource does
+  technically confirm the resource ID is valid to an unauthorized
+  caller. Accepted as a reasonable trade-off for this project's
+  threat model; revisit if stricter existence-hiding becomes a
+  requirement.
