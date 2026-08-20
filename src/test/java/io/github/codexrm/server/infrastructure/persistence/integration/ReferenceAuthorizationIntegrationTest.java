@@ -12,6 +12,16 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.transaction.annotation.Transactional;
+import io.github.codexrm.server.domain.enums.ERole;
+import io.github.codexrm.server.domain.model.Role;
+import io.github.codexrm.server.domain.model.User;
+import io.github.codexrm.server.infrastructure.persistence.repository.RoleRepository;
+import io.github.codexrm.server.infrastructure.persistence.repository.UserRepository;
+import io.github.codexrm.server.infrastructure.security.jwt.JwtUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.transaction.TestTransaction;
+
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,6 +36,18 @@ public class ReferenceAuthorizationIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtils jwtUtils;
 
     private String url(String path) {
         return "http://localhost:" + port + path;
@@ -66,6 +88,23 @@ public class ReferenceAuthorizationIntegrationTest extends BaseIntegrationTest {
 
         JsonNode json = objectMapper.readTree(loginResponse.getBody());
         return json.get("token").asText();
+    }
+
+    private String signupWithRole(String username, String email, ERole role) {
+
+        Role dbRole = roleRepository.findByName(role)
+                .orElseThrow(() -> new IllegalStateException("Role not seeded: " + role));
+
+        User user = new User(username, "User", "Test", email, true,
+                passwordEncoder.encode("Test@123"));
+        user.setRoles(Set.of(dbRole));
+
+        userRepository.save(user);
+
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+
+        return jwtUtils.generateTokenFromUsername(username);
     }
 
     private HttpHeaders authHeaders(String token) {
@@ -333,5 +372,134 @@ public class ReferenceAuthorizationIntegrationTest extends BaseIntegrationTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).contains("Updated Title");
+    }
+
+
+    // ROL VÁLIDO PERO PERMISO INSUFICIENTE → 403
+    @Test
+    void regularUserShouldBeForbiddenFromCreatingUsers() throws Exception {
+
+        String token = signupAndLogin("noPermission", "nopermission@test.com");
+        HttpHeaders headers = authHeaders(token);
+
+        String body = """
+            {
+              "username": "someoneelse",
+              "email": "someoneelse@test.com",
+              "password": "Test@123",
+              "name": "Some",
+              "lastName": "One",
+              "enabled": true,
+              "roles": ["ROLE_USER"]
+            }
+            """;
+
+        HttpEntity<String> entity = new HttpEntity<>(body, headers);
+
+        ResponseEntity<String> response =
+                restTemplate.exchange(
+                        url("/api/users"),
+                        HttpMethod.POST,
+                        entity,
+                        String.class
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    // MANAGER puede ver referencias de todos los usuarios
+    @Test
+    void managerShouldSeeAllUsersReferences() throws Exception {
+
+        String ownerToken = signupAndLogin("ownerForManager", "ownerformanager@test.com");
+        createReference(authHeaders(ownerToken), "Visible to manager");
+
+        String managerToken = signupWithRole("managerUser", "manager@test.com", ERole.ROLE_MANAGER);
+        HttpHeaders managerHeaders = authHeaders(managerToken);
+
+        ResponseEntity<String> response =
+                restTemplate.exchange(
+                        url("/api/references/all-users?page=0&size=10"),
+                        HttpMethod.GET,
+                        new HttpEntity<>(managerHeaders),
+                        String.class
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    // USER regular NO puede acceder a all-users (solo MANAGER)
+    @Test
+    void regularUserShouldBeForbiddenFromAllUsersReferences() throws Exception {
+
+        String token = signupAndLogin("notManager", "notmanager@test.com");
+        HttpHeaders headers = authHeaders(token);
+
+        ResponseEntity<String> response =
+                restTemplate.exchange(
+                        url("/api/references/all-users?page=0&size=10"),
+                        HttpMethod.GET,
+                        new HttpEntity<>(headers),
+                        String.class
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    // AUDITOR puede ver el perfil de cualquier usuario
+    @Test
+    void auditorShouldSeeAnyUserProfile() throws Exception {
+
+        String targetToken = signupAndLogin("auditTarget", "audittarget@test.com");
+
+        JsonNode meNode = objectMapper.readTree(
+                restTemplate.exchange(
+                        url("/api/users/me"),
+                        HttpMethod.GET,
+                        new HttpEntity<>(authHeaders(targetToken)),
+                        String.class
+                ).getBody()
+        );
+        String targetId = meNode.get("id").asText();
+
+        String auditorToken = signupWithRole("auditorUser", "auditor@test.com", ERole.ROLE_AUDITOR);
+        HttpHeaders auditorHeaders = authHeaders(auditorToken);
+
+        ResponseEntity<String> response =
+                restTemplate.exchange(
+                        url("/api/users/" + targetId),
+                        HttpMethod.GET,
+                        new HttpEntity<>(auditorHeaders),
+                        String.class
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    // EXPORT filtra silenciosamente IDs de referencias ajenas
+    @Test
+    void exportShouldSilentlyFilterOutOthersReferences() throws Exception {
+
+        String ownerToken = signupAndLogin("exportOwner", "exportowner@test.com");
+        HttpHeaders ownerHeaders = authHeaders(ownerToken);
+        String ownRefJson = createReference(ownerHeaders, "My own reference");
+        String ownId = objectMapper.readTree(ownRefJson).get("id").asText();
+
+        String otherToken = signupAndLogin("exportOther", "exportother@test.com");
+        String otherRefJson = createReference(authHeaders(otherToken), "Someone else's reference");
+        String otherId = objectMapper.readTree(otherRefJson).get("id").asText();
+
+        String body = "[" + ownId + ", " + otherId + "]";
+        HttpEntity<String> entity = new HttpEntity<>(body, ownerHeaders);
+
+        ResponseEntity<String> response =
+                restTemplate.exchange(
+                        url("/api/references/export?fileName=export.ris&format=RIS"),
+                        HttpMethod.POST,
+                        entity,
+                        String.class
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 }
