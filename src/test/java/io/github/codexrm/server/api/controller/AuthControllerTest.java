@@ -103,8 +103,6 @@ class AuthControllerTest {
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
-        when(jwtUtils.generateJwtToken(any())).thenReturn("jwt-token");
-        when(jwtUtils.getJwtExpirationMs()).thenReturn(1000);
 
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setToken("refresh-token");
@@ -112,13 +110,14 @@ class AuthControllerTest {
 
         when(refreshTokenService.createRefreshToken(anyInt())).thenReturn(refreshToken);
 
+        when(jwtUtils.generateJwtToken(any())).thenReturn("jwt-token");
+
         mockMvc.perform(post("/api/auth/signin")
                         .with(user("test"))
                         .with(csrf())
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("jwt-token"))
                 .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
     }
 
@@ -136,11 +135,19 @@ class AuthControllerTest {
         refreshToken.setUser(user);
         refreshToken.setExpiryDate(Instant.now().plusSeconds(3600));
 
+        RefreshToken rotatedToken = new RefreshToken();
+        rotatedToken.setToken("rotated-refresh-token");
+        rotatedToken.setUser(user);
+        rotatedToken.setExpiryDate(Instant.now().plusSeconds(3600));
+
         when(refreshTokenService.findByToken(anyString()))
                 .thenReturn(Optional.of(refreshToken));
 
         when(refreshTokenService.verifyExpiration(any()))
                 .thenReturn(refreshToken);
+
+        when(refreshTokenService.rotateRefreshToken(any()))
+                .thenReturn(rotatedToken);
 
         when(jwtUtils.generateTokenFromUsername(any()))
                 .thenReturn("new-jwt");
@@ -153,7 +160,8 @@ class AuthControllerTest {
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("new-jwt"));
+                .andExpect(jsonPath("$.accessToken").value("new-jwt"))
+                .andExpect(jsonPath("$.refreshToken").value("rotated-refresh-token"));
     }
 
     // LOGOUT
