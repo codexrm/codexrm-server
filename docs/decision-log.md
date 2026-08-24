@@ -670,3 +670,53 @@ This applies identically to references (`get`, `update`, `delete`,
   caller. Accepted as a reasonable trade-off for this project's
   threat model; revisit if stricter existence-hiding becomes a
   requirement.
+
+---
+
+## ADR-015: JWT/Refresh Token Lifecycle Policy
+
+### Status
+Accepted
+
+### Context
+
+An audit of the JWT/refresh token lifecycle (week 4-6 of Fase 2,
+`docs/security/jwt-refresh-token-audit.md`) found a critical bug: a
+second login for the same user, without a prior logout, crashed with
+a 500 due to `createRefreshToken()` always inserting a new row
+against a `user_id UNIQUE` constraint. It also found no rotation on
+refresh token use, meaning a leaked refresh token stayed valid for
+its full 10-day lifetime with no mitigation.
+
+### Decision
+
+- **One refresh token per user, enforced by upsert.** `createRefreshToken()`
+  reuses the existing row for the user (new token value, new expiry)
+  instead of inserting a duplicate. A second login simply issues a
+  fresh session instead of erroring.
+- **Rotation on every refresh.** `POST /api/auth/refresh-token`
+  invalidates the token it was called with and issues a new one.
+  The old token cannot be reused afterward.
+- **Logout deletes the refresh token.** `POST /api/auth/logout`
+  (already required authentication since #150) removes the user's
+  refresh token via `deleteByUserId`.
+- JWT expiration: 1 hour. Refresh token expiration: 10 days. Same
+  across all profiles.
+
+### Consequences
+
+#### Positive
+- A common, legitimate flow (logging in from a second device/tab)
+  no longer crashes the app.
+- A leaked refresh token has a much smaller window of usability
+  (until its next legitimate use by the real owner, not its full
+  10-day lifetime).
+
+#### Negative
+- Logging in from a second device invalidates the first device's
+  session for the purposes of *creating a new* refresh token — the
+  first device's existing JWT still works until it expires (1 hour),
+  but its refresh token is replaced, so it can't get a new JWT after
+  that without logging in again. This is a reasonable trade-off for
+  a personal-scale project; revisit if multi-device concurrent
+  sessions become a real requirement.

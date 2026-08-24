@@ -2,7 +2,9 @@ package io.github.codexrm.server.infrastructure.persistence.integration;
 
 import io.github.codexrm.server.api.dto.request.LoginRequest;
 import io.github.codexrm.server.api.dto.request.SignupRequest;
+import io.github.codexrm.server.api.dto.request.TokenRefreshRequest;
 import io.github.codexrm.server.api.dto.response.JwtResponse;
+import io.github.codexrm.server.api.dto.response.TokenRefreshResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,14 +12,17 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
-
 
 public class AuthIntegrationTest extends BaseIntegrationTest{
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @LocalServerPort
     private int port;
@@ -180,4 +185,116 @@ public class AuthIntegrationTest extends BaseIntegrationTest{
         assertThat(response.getStatusCode())
                 .isEqualTo(HttpStatus.OK);
     }
+
+    // Doble login: el segundo signin del mismo usuario no debe romper con 500
+    @Test
+    void shouldAllowDoubleLoginWithoutServerError() {
+
+        SignupRequest signup = new SignupRequest();
+        signup.setUsername("doubleLoginUser");
+        signup.setPassword("Test@123");
+        signup.setEmail("doublelogin@test.com");
+        signup.setName("User");
+        signup.setLastName("Test");
+        signup.setEnabled(true);
+
+        restTemplate.postForEntity(url("/api/auth/signup"), signup, String.class);
+
+        LoginRequest login = new LoginRequest();
+        login.setUsername("doubleLoginUser");
+        login.setPassword("Test@123");
+
+        ResponseEntity<JwtResponse> firstLogin =
+                restTemplate.postForEntity(url("/api/auth/signin"), login, JwtResponse.class);
+
+        assertThat(firstLogin.getStatusCode()).isEqualTo(HttpStatus.OK);
+        String firstRefreshToken = firstLogin.getBody().getRefreshToken();
+
+        ResponseEntity<JwtResponse> secondLogin =
+                restTemplate.postForEntity(url("/api/auth/signin"), login, JwtResponse.class);
+
+        assertThat(secondLogin.getStatusCode()).isEqualTo(HttpStatus.OK);
+        String secondRefreshToken = secondLogin.getBody().getRefreshToken();
+
+        // A new refresh token is issued; the old one is replaced, not duplicated.
+        assertThat(secondRefreshToken).isNotEqualTo(firstRefreshToken);
+    }
+
+    // Rotación: usar el refresh token devuelve uno nuevo, distinto al usado
+    @Test
+    void shouldRotateRefreshTokenOnUse() throws Exception {
+
+        SignupRequest signup = new SignupRequest();
+        signup.setUsername("rotationUser");
+        signup.setPassword("Test@123");
+        signup.setEmail("rotation@test.com");
+        signup.setName("User");
+        signup.setLastName("Test");
+        signup.setEnabled(true);
+
+        restTemplate.postForEntity(url("/api/auth/signup"), signup, String.class);
+
+        LoginRequest login = new LoginRequest();
+        login.setUsername("rotationUser");
+        login.setPassword("Test@123");
+
+        ResponseEntity<JwtResponse> loginResponse =
+                restTemplate.postForEntity(url("/api/auth/signin"), login, JwtResponse.class);
+
+        String originalRefreshToken = loginResponse.getBody().getRefreshToken();
+
+        TokenRefreshRequest refreshRequest = new TokenRefreshRequest();
+        refreshRequest.setRefreshToken(originalRefreshToken);
+
+        ResponseEntity<String> refreshResponse =
+                restTemplate.postForEntity(
+                        url("/api/auth/refresh-token"),
+                        refreshRequest,
+                        String.class
+                );
+
+        assertThat(refreshResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        JsonNode body = objectMapper.readTree(refreshResponse.getBody());
+        String rotatedRefreshToken = body.get("refreshToken").asText();
+
+        assertThat(rotatedRefreshToken).isNotEqualTo(originalRefreshToken);
+    }
+
+    // El refresh token viejo, ya rotado, no debe volver a funcionar
+    @Test
+    void shouldRejectOldRefreshTokenAfterRotation() {
+
+        SignupRequest signup = new SignupRequest();
+        signup.setUsername("oldTokenUser");
+        signup.setPassword("Test@123");
+        signup.setEmail("oldtoken@test.com");
+        signup.setName("User");
+        signup.setLastName("Test");
+        signup.setEnabled(true);
+
+        restTemplate.postForEntity(url("/api/auth/signup"), signup, String.class);
+
+        LoginRequest login = new LoginRequest();
+        login.setUsername("oldTokenUser");
+        login.setPassword("Test@123");
+
+        ResponseEntity<JwtResponse> loginResponse =
+                restTemplate.postForEntity(url("/api/auth/signin"), login, JwtResponse.class);
+
+        String originalRefreshToken = loginResponse.getBody().getRefreshToken();
+
+        TokenRefreshRequest refreshRequest = new TokenRefreshRequest();
+        refreshRequest.setRefreshToken(originalRefreshToken);
+
+        // First use: rotates the token, succeeds
+        restTemplate.postForEntity(url("/api/auth/refresh-token"), refreshRequest, String.class);
+
+        // Second use of the SAME (now-rotated-away) token must fail
+        ResponseEntity<String> reuseAttempt =
+                restTemplate.postForEntity(url("/api/auth/refresh-token"), refreshRequest, String.class);
+
+        assertThat(reuseAttempt.getStatusCode()).isNotEqualTo(HttpStatus.OK);
+    }
+
 }
