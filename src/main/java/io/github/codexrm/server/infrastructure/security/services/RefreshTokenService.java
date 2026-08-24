@@ -31,12 +31,15 @@ public class RefreshTokenService {
         return refreshTokenRepository.findByToken(token);
     }
 
+    @Transactional
     public RefreshToken createRefreshToken(Integer userId) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
 
-        RefreshToken refreshToken = new RefreshToken();
+        RefreshToken refreshToken = refreshTokenRepository.findByUser(user)
+                .orElseGet(RefreshToken::new);
+
         refreshToken.setUser(user);
         refreshToken.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
         refreshToken.setToken(UUID.randomUUID().toString());
@@ -55,6 +58,15 @@ public class RefreshTokenService {
             );
         }
         return token;
+    }
+
+    @Transactional
+    public RefreshToken rotateRefreshToken(RefreshToken oldToken) {
+
+        oldToken.setToken(UUID.randomUUID().toString());
+        oldToken.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
+
+        return refreshTokenRepository.save(oldToken);
     }
 
     @Transactional
