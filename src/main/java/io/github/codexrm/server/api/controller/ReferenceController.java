@@ -6,7 +6,6 @@ import io.github.codexrm.server.api.dto.ReferenceDTO;
 import io.github.codexrm.server.api.dto.ReferenceLibraryDTO;
 import io.github.codexrm.server.api.dto.ReferencePageDTO;
 import io.github.codexrm.server.domain.enums.SortReference;
-import io.github.codexrm.server.infrastructure.exception.InvalidOperationException;
 import io.github.codexrm.server.domain.model.Reference;
 import io.github.codexrm.server.domain.model.User;
 import io.github.codexrm.server.api.dto.response.ErrorResponse;
@@ -36,6 +35,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,6 +49,8 @@ import java.util.*;
 @RestController
 @Tag(name = "References", description = "Reference management operations")
 public class ReferenceController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ReferenceController.class);
 
     private static final String UPLOADED_FOLDER = System.getProperty("java.io.tmpdir") + "/tempUpload";
 
@@ -214,6 +218,9 @@ public class ReferenceController {
 
         referenceService.sync(user, newList, updateList, library.getDeletedReferencesList());
 
+        logger.info("event=reference.sync username={} newCount={} updatedCount={} deletedCount={}",
+                user.getUsername(), newList.size(), updateList.size(),
+                library.getDeletedReferencesList() != null ? library.getDeletedReferencesList().size() : 0);
         SortReference sort = library.getSortReference();
         if (sort == null) sort = SortReference.idDesc;
 
@@ -235,9 +242,13 @@ public class ReferenceController {
             @RequestParam (name = "format", defaultValue = "RIS") String format,
             @RequestParam (name = "uploadFile") MultipartFile uploadFile) throws IOException, ParseException{
 
-        if (uploadFile.isEmpty()) throw new IllegalArgumentException("You must select a file!");
+        if (uploadFile.isEmpty()) {
+            logger.warn("event=reference.import outcome=rejected reason=empty_file");
+            throw new IllegalArgumentException("You must select a file!");
+        }
 
         if (format == null || !ALLOWED_IMPORT_FORMATS.contains(format.toUpperCase())) {
+            logger.warn("event=reference.import outcome=rejected reason=unsupported_format format={}", format);
             throw new IllegalArgumentException("Unsupported import format: " + format);
         }
 
@@ -260,6 +271,9 @@ public class ReferenceController {
                 r.setUser(user);
                 referenceService.add(r);
             }
+
+            logger.info("event=reference.import username={} format={} outcome=success count={}",
+                    user.getUsername(), format, list.size());
 
             return ResponseEntity.ok(new MessageResponse("Reference Imported!"));
         } finally {
@@ -301,6 +315,9 @@ public class ReferenceController {
             referenceService.exportReferences(file, references, format);
 
             ByteArrayResource resource = new ByteArrayResource(Files.readAllBytes(path));
+
+            logger.info("event=reference.export username={} format={} outcome=success count={}",
+                    user.getUsername(), format, filteredIds.size());
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + safeFileName + "\"")

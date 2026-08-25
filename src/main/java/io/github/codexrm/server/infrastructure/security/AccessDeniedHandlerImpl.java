@@ -25,7 +25,7 @@ public class AccessDeniedHandlerImpl implements AccessDeniedHandler {
                        HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {
 
-        logger.warn("Access denied for {}: {}", request.getRequestURI(), accessDeniedException.getMessage());
+        logger.warn("event=authorization.denied path={} reason={}", request.getRequestURI(), accessDeniedException.getMessage());
 
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
