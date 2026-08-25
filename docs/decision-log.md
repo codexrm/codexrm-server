@@ -761,3 +761,47 @@ wildcard-plus-credentials combination cannot occur.
 
 #### Negative
 - None identified.
+
+
+---
+
+## ADR-017: OWASP Hardening for Import/Export — Server-Generated Filenames Only
+
+### Status
+Accepted
+
+### Context
+
+Fase 1 (#137) fixed a path traversal vulnerability in export by
+sanitizing the client-supplied `fileName` before using it to build a
+filesystem path. Fase 2's stricter OWASP standard for week 4-6 goes
+further: the server should never use any client-supplied value to
+construct a filesystem path, sanitized or not.
+
+### Decision
+
+- **Import**: the physical temp filename is generated entirely by the
+  server (`UUID.randomUUID()` + validated extension). The client's
+  original filename is read only to validate its extension against
+  an allowlist (`.ris`, `.bib`, `.bibtex`) — never used in the path.
+- **Export**: the physical temp filename is `UUID.randomUUID()`
+  alone. The client-supplied `fileName` is still sanitized (per
+  #137) and used, but only for the `Content-Disposition` response
+  header — response metadata the browser uses to name the downloaded
+  file, not a filesystem path.
+- Temp files (both import and export) are always deleted via
+  try/finally, regardless of success or failure (since #137).
+
+### Consequences
+
+#### Positive
+- No client-supplied string can influence any filesystem path,
+  closing the category of risk entirely rather than relying on
+  sanitization alone.
+- Covered by `ImportExportSecurityIntegrationTest`: valid file
+  accepted, empty file rejected, malicious filename never escapes
+  the uploads directory, temp files cleaned up on failure.
+
+#### Negative
+- None identified — the download filename shown to the user is
+  unaffected; only the internal, temporary on-disk name changed.
