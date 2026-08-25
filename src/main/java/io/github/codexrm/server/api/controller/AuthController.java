@@ -33,6 +33,9 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -42,6 +45,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/auth")
 @Tag(name = "Auth", description = "Authentication operations")
 public class AuthController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     private final UserService userService;
     private final RefreshTokenService refreshTokenService;
@@ -91,6 +96,8 @@ public class AuthController {
 
             String jwt = jwtUtils.generateJwtToken(userDetails);
 
+            logger.info("event=auth.login.success username={}", userDetails.getUsername());
+
             List<String> roles = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList());
 
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getId());
@@ -112,6 +119,8 @@ public class AuthController {
                     roles));
 
         } catch (AuthenticationException e) {
+
+            logger.warn("event=auth.login.failed username={}", loginRequest.getUsername());
 
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
@@ -138,12 +147,17 @@ public class AuthController {
 
         RefreshToken verifiedToken = refreshTokenService.findByToken(requestRefreshToken)
                 .map(refreshTokenService::verifyExpiration)
-                .orElseThrow(() -> new TokenRefreshException(
-                        requestRefreshToken,
-                        "Refresh token is not in database!"));
+                .orElseThrow(() -> {
+                    logger.warn("event=auth.refresh.failed reason=token_not_found");
+                    return new TokenRefreshException(
+                            requestRefreshToken,
+                            "Refresh token is not in database!");
+                });
 
         String username = verifiedToken.getUser().getUsername();
         RefreshToken rotatedToken = refreshTokenService.rotateRefreshToken(verifiedToken);
+
+        logger.info("event=auth.refresh.success username={}", username);
         String jwt = jwtUtils.generateTokenFromUsername(username);
 
         return ResponseEntity.ok(
@@ -164,10 +178,12 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> logoutUser() {
 
-        UserDetailsImpl userDetails =
-                (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            UserDetailsImpl userDetails =
+                    (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        refreshTokenService.deleteByUserId(userDetails.getId());
+            logger.info("event=auth.logout username={}", userDetails.getUsername());
+
+            refreshTokenService.deleteByUserId(userDetails.getId());
         SecurityContextHolder.clearContext();
 
         return ResponseEntity.ok(new MessageResponse("Log out successful!"));

@@ -37,7 +37,9 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
             String jwt = parseJwt(request);
 
-            logger.info("JWT recibido: {}", jwt);
+            if (jwt != null) {
+                logger.debug("JWT present on request (first 8 chars: {}...)", jwt.substring(0, Math.min(8, jwt.length())));
+            }
 
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
 
