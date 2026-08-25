@@ -250,7 +250,7 @@ public class ReferenceController {
             throw new IllegalArgumentException("Unsupported file extension: " + extension);
         }
 
-        File file = saveUploadedFile(uploadFile);
+        File file = saveUploadedFile(uploadFile, extension);
 
         try {
             User user = getAuthenticatedUser();
@@ -291,7 +291,7 @@ public class ReferenceController {
             references.add(referenceService.get(id));
         }
 
-        String uniqueName = UUID.randomUUID() + "_" + safeFileName;
+        String uniqueName = UUID.randomUUID().toString();
         Path path = Paths.get(UPLOADED_FOLDER, uniqueName);
         Files.createDirectories(path.getParent());
 
@@ -332,11 +332,9 @@ public class ReferenceController {
     }
 
     //FILE HANDLING
-    private File saveUploadedFile(MultipartFile file) throws IOException {
-        String fileName = Optional.ofNullable(file.getOriginalFilename()).orElse("upload.tmp");
+    private File saveUploadedFile(MultipartFile file, String extension) throws IOException {
 
-        fileName = Paths.get(fileName).getFileName().toString();
-        String uniqueFileName = UUID.randomUUID() + "_" + fileName;
+        String uniqueFileName = UUID.randomUUID() + (extension.isEmpty() ? "" : "." + extension);
 
         Path path = Paths.get(UPLOADED_FOLDER, uniqueFileName);
         Files.createDirectories(path.getParent());
