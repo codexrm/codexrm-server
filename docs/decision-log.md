@@ -720,3 +720,44 @@ its full 10-day lifetime with no mitigation.
   that without logging in again. This is a reasonable trade-off for
   a personal-scale project; revisit if multi-device concurrent
   sessions become a real requirement.
+
+
+---
+
+## ADR-016: Per-Profile CORS Configuration
+
+### Status
+Accepted
+
+### Context
+
+Fase 2's week 4-6 plan required confirming CORS has an explicit,
+minimal configuration per profile, and that no wildcard origin is
+combined with credentials — a common CORS misconfiguration.
+
+### Decision
+
+CORS is centralized in `CorsConfig`/`CorsProperties` (since Fase 1),
+reading `cors.allowed-origins` per profile:
+- `dev`: `http://localhost:3000` (the local frontend dev server).
+- `prod`: `${CORS_ALLOWED_ORIGINS}`, externalized via environment
+  variable since ADR-009 — never hardcoded, never a wildcard.
+- `test`/`integration`: no explicit value; `allowedOrigins` resolves
+  to `null` (equivalent to "no origins configured"), which is
+  acceptable since integration tests don't exercise cross-origin
+  behavior.
+
+`allowCredentials` is `true` across all profiles, but since
+`allowedOrigins` is never `*` in any profile, the unsafe
+wildcard-plus-credentials combination cannot occur.
+
+### Consequences
+
+#### Positive
+- Confirmed no code change was needed — the Fase 1 centralization
+  work (ADR-009) already resulted in a safe, per-profile CORS setup.
+- Explicit documentation closes out this item of the Fase 2 plan
+  with evidence, not assumption.
+
+#### Negative
+- None identified.
