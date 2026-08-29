@@ -805,3 +805,62 @@ construct a filesystem path, sanitized or not.
 #### Negative
 - None identified — the download filename shown to the user is
   unaffected; only the internal, temporary on-disk name changed.
+
+---
+
+## ADR-018: Rate Limiting Strategy for Auth Endpoints
+
+### Status
+Accepted
+
+### Context
+
+`/api/auth/signin` and `/api/auth/refresh-token` were unprotected
+against brute force — no limit on repeated attempts.
+
+### Decision
+
+Added in-memory rate limiting via Bucket4j, keyed by client IP,
+applied only to `/api/auth/signin` and `/api/auth/refresh-token`.
+Threshold and refill window are configurable per profile
+(`codexrm.ratelimit.auth.*`): 5 attempts/minute in `prod`, 100/minute
+in `dev` (so local development isn't hindered), and 1000/minute in
+`test`/`integration` (so the test suite's many rapid signin calls
+across different scenarios don't trip the limiter against each
+other, since they all share the same loopback IP in a test
+environment).
+
+`AuthRateLimitFilter` is deliberately **not** a `@Component` —
+it's constructed manually as a `@Bean` inside `WebSecurityConfig`,
+following the same pattern as `AuthTokenFilter`. This was a real
+lesson learned during implementation: making it `@Component` caused
+`@WebMvcTest`-based controller tests to auto-detect it as a global
+filter, and mocking it with `@MockBean` produced a no-op stub that
+never called `filterChain.doFilter(...)`, silently blocking every
+request in every controller test (`AuthControllerTest`,
+`ReferenceControllerTest`, `UserControllerTest` all failed with
+empty 200 responses). Avoiding `@Component` sidesteps this entirely.
+
+An in-memory, single-instance strategy is adequate for this
+project's current scale — no distributed store (Redis, etc.) is
+needed. If the app ever runs across multiple instances, each
+instance would track its own limit independently, which would need
+to move to a shared store to remain effective.
+
+### Consequences
+
+#### Positive
+- Brute-force attempts against login/refresh are throttled with a
+  clear, standard `429` response using the existing `ErrorResponse`
+  structure.
+- Threshold is configurable per environment without code changes.
+- Verified live: 6 rapid failed signin attempts in `dev` (limit
+  temporarily lowered to 5) returned 429 on the 6th, with the
+  correlationId (from ADR at #161) still present.
+
+#### Negative
+- Rate limiting by IP means users behind a shared IP (NAT, corporate
+  network) share the same bucket — acceptable trade-off at this
+  scale, revisit if it becomes a real complaint.
+- Not effective across multiple app instances without a shared store
+  — noted as a known limitation, not a current requirement.
