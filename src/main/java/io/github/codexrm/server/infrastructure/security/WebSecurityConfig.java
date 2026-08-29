@@ -1,10 +1,12 @@
 package io.github.codexrm.server.infrastructure.security;
 
+import io.github.codexrm.server.infrastructure.config.RateLimitConfig;
 import io.github.codexrm.server.infrastructure.security.jwt.AuthEntryPointJwt;
 import io.github.codexrm.server.infrastructure.security.jwt.AuthTokenFilter;
 import io.github.codexrm.server.infrastructure.security.services.UserDetailsServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -15,7 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import io.github.codexrm.server.infrastructure.security.jwt.AuthEntryPointJwt;
+import io.github.codexrm.server.infrastructure.config.RateLimitConfig;
 
 @Configuration
 @EnableMethodSecurity
@@ -24,16 +26,19 @@ public class WebSecurityConfig {
   private final UserDetailsServiceImpl userDetailsService;
   private final AuthEntryPointJwt unauthorizedHandler;
   private final AccessDeniedHandlerImpl accessDeniedHandler;
-  private final org.springframework.core.env.Environment environment;
+  private final Environment environment;
+  private final RateLimitConfig rateLimitConfig;
 
   public WebSecurityConfig(UserDetailsServiceImpl userDetailsService,
                            AuthEntryPointJwt unauthorizedHandler,
                            AccessDeniedHandlerImpl accessDeniedHandler,
-                           org.springframework.core.env.Environment environment) {
+                           Environment environment,
+                           RateLimitConfig rateLimitConfig) {
     this.userDetailsService = userDetailsService;
     this.unauthorizedHandler = unauthorizedHandler;
     this.accessDeniedHandler = accessDeniedHandler;
     this.environment = environment;
+    this.rateLimitConfig = rateLimitConfig;
   }
 
   // JWT Filter
@@ -41,6 +46,10 @@ public class WebSecurityConfig {
   public AuthTokenFilter authenticationJwtTokenFilter() {
     return new AuthTokenFilter();
   }
+
+  // Rate limit filter
+  @Bean
+  public AuthRateLimitFilter authRateLimitFilter() {return new AuthRateLimitFilter(rateLimitConfig);}
 
   // Password encoder
   @Bean
@@ -106,6 +115,9 @@ public class WebSecurityConfig {
             })
 
             .authenticationProvider(authenticationProvider());
+
+    http.addFilterBefore(authRateLimitFilter(),
+            UsernamePasswordAuthenticationFilter.class);
 
     http.addFilterBefore(authenticationJwtTokenFilter(),
             UsernamePasswordAuthenticationFilter.class);
