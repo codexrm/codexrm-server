@@ -123,3 +123,29 @@ description and only the relevant subset of checks is run.
 A single policy must be picked and kept stable across equivalent
 endpoints — the problem isn't choosing one, it's mixing both without
 criteria. (Policy to be defined and documented in weeks 1-3.)
+
+
+## Fase 2 — Observability & Rate Limiting Coverage (Semanas 7-9)
+
+Additional integration test coverage added during Fase 2's
+observability work:
+
+- **`RateLimitIntegrationTest`**: confirms `/api/auth/signin` returns
+  `429 Too Many Requests` after exceeding the configured rate limit,
+  and that the `429` response still includes the `X-Correlation-Id`
+  header. Uses `@TestPropertySource` to override the lax
+  integration-profile rate limit (1000/min, set so other tests'
+  rapid signin calls don't interfere with each other) down to a
+  deterministic `3` for this class only.
+- **`BusinessEventLoggingIntegrationTest`**: uses a Logback
+  `ListAppender` to capture real log output during a request, and
+  confirms:
+  - `event=auth.login.success` is logged on successful login.
+  - `event=auth.login.failed` is logged on failed login.
+  - The password used in a failed login attempt never appears in any
+    captured log line — enforcing the "never log passwords" rule
+    from `docs/observability/event-catalog.md` with a real test,
+    not just a code-review convention.
+
+See `docs/observability/event-catalog.md` for the full event catalog
+and logging rules these tests are built to protect.
