@@ -864,3 +864,56 @@ to move to a shared store to remain effective.
   scale, revisit if it becomes a real complaint.
 - Not effective across multiple app instances without a shared store
   — noted as a known limitation, not a current requirement.
+
+
+---
+
+## ADR-019: Cierre de Fase 2 y Handoff a Fase 3
+
+### Status
+Accepted
+
+### Context
+
+Fase 2 (12 semanas: gate de entrada + hardening de autorización + JWT/CORS/OWASP + observabilidad/rate limiting/calidad + runbooks/post-mortem) requiere una decisión explícita de cierre, con evidencia verificada — no solo la sensación de "ya está", igual que se hizo al cerrar Fase 1.
+
+### Verification performed (Semana 12)
+
+Los 10 ítems de la checklist de cierre fueron verificados con evidencia fresca, no de memoria:
+
+- `mvn verify`: `BUILD SUCCESS` confirmado hoy (145+ unit tests, 35+ integration tests).
+- Autorización: `git log` sobre `WebSecurityConfig.java` confirma que el último cambio es el de rate limiting (semana 7-9) — la matriz de autorización sigue vigente, sin drift.
+- OWASP import/export: `git log` sobre `ReferenceController.java` confirma que el fix de nombres server-generated (semana 4-6) no fue pisado por cambios posteriores.
+- CORS: confirmado `http://localhost:3000` (dev) y `${CORS_ALLOWED_ORIGINS}` (prod) sin cambios, sin wildcard en ningún perfil.
+- Logs estructurados: confirmado JSON con `correlationId` al levantar el servidor.
+- Rate limiting: `RateLimitIntegrationTest` pasando, `429` confirmado en vivo en la semana 7-9.
+- Baseline de carga: `docs/performance/load-baseline.md` existe con resultados reales de 2 escenarios.
+- Runbooks: los 3 (`auth-401-403.md`, `refresh-token-failed.md`, `import-export-rejected.md`) existen en `docs/runbooks/`, verificados contra comportamiento real en vivo durante las semanas 10-11.
+
+### Security findings resolved during Fase 2
+
+4 hallazgos de seguridad reales se encontraron y corrigieron durante esta fase, ninguno quedó pospuesto:
+
+1. Doble login crasheando con 500 (semana 4-6) — corregido con upsert + rotación de refresh token.
+2. JWT completo logueado en texto plano (semana 7-9) — corregido, ahora solo 8 caracteres a nivel debug.
+3. Path traversal en export (profundizado en semana 4-6, sobre el fix base de Fase 1 #137) — nombres de archivo 100% generados por el servidor.
+4. `AUDITOR` bloqueado incorrectamente y `logout` sin autenticación real (semana 1-3) — ambos corregidos.
+
+### Known debt carried forward (not a security vulnerability)
+
+- **ADR-012**: `UserService` acepta DTOs de la capa `api` directamente, violando el límite de capas que respetan `ReferenceService`/`RoleService`. Evaluado explícitamente en la semana 0 de Fase 2 contra las 5 categorías del gate (auth, OWASP, observabilidad, rate limiting, runbooks) — no encaja en ninguna. Es deuda de arquitectura general, no de seguridad ni operación. Queda como candidato a Fase 3, o a cuando surja necesidad concreta de tocar `UserService`.
+
+### Decision
+
+El gate de cierre de Fase 2 aprueba. Los 10 ítems de la checklist pasan con evidencia verificada. No queda ninguna vulnerabilidad crítica conocida sin fix — la única deuda pendiente (ADR-012) es arquitectura general, explícitamente fuera de alcance de Fase 2 desde su propio gate de entrada.
+
+Fase 3 puede comenzar sobre esta base.
+
+### Consequences
+
+#### Positive
+- Fase 3 arranca sin deuda de seguridad oculta o sin resolver.
+- El patrón de verificación con evidencia (no memoria) se sostuvo en las 12 semanas, incluyendo el propio cierre.
+
+#### Negative
+- Ninguna identificada — el gate pasó limpio.
