@@ -196,7 +196,7 @@ Services started:
 
 ## Environment Variables
 
-| Variable | Description | Default Value                     |
+| Variable | Description | Valor en docker-compose                      |
 |---|---|-----------------------------------|
 | SPRING_PROFILES_ACTIVE | Active Spring profile | prod                              |
 | SPRING_DATASOURCE_URL | PostgreSQL connection URL | jdbc:postgresql://db:5432/codexrm |
