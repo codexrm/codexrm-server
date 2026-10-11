@@ -23,7 +23,7 @@ parsing.
 | `auth.logout` | INFO | `AuthController.logoutUser` | `username` | A user logged out (refresh token deleted) |
 | `authorization.denied` | WARN | `AccessDeniedHandlerImpl` | `path`, `reason` | A request was rejected with 403 |
 | `reference.sync` | INFO | `ReferenceController.sync` | `username`, `newCount`, `updatedCount`, `deletedCount` | A sync operation completed |
-| `reference.import` | INFO/WARN | `ReferenceController.importReferences` | `username`, `format`, `outcome`, `count` or `reason` | An import succeeded, or was rejected (empty file / unsupported format) |
+| `reference.import` | INFO/WARN | `ReferenceController.importReferences` | `username`, `format`, `outcome`, `count`| An import succeeded, or was rejected (empty file / unsupported format) |
 | `reference.export` | INFO | `ReferenceController.exportReferences` | `username`, `format`, `count` | An export completed |
 
 ## What is NEVER logged

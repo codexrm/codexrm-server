@@ -23,15 +23,25 @@
 
 ## Logs y eventos esperados
 
-> ⚠️ Pendiente: logs estructurados con evento dedicado de
-> import/export y `correlationId` end-to-end están planeados para las
-> semanas 7-9 de Fase 2 (observabilidad). Hoy, el único log disponible
-> es el mensaje de error estándar en `ErrorResponse` (ver
-> `docs/decision-log.md` ADR-011) — sin evento de negocio dedicado
-> todavía.
+Eventos de negocio emitidos por `ReferenceController`
+(catálogo completo en `docs/observability/event-catalog.md`):
 
-- Si hubo bloqueo de seguridad, motivo general sin exponer contenido
-  del archivo (garantizado hoy vía `GlobalExceptionHandler`).
+- `event=reference.import outcome=success` (INFO), con `username`,
+  `format` y `count`.
+- `event=reference.import outcome=rejected reason=empty_file` (WARN):
+  archivo vacío.
+- `event=reference.import outcome=rejected reason=unsupported_format`
+  (WARN), con `format`: formato no soportado.
+- `event=reference.export outcome=success` (INFO), con `username`,
+  `format` y `count`.
+
+Estos eventos nunca registran el contenido del archivo ni el nombre
+que envió el cliente.
+
+Sin evento propio: los errores de parseo del archivo y otros rechazos
+de validación no emiten un evento de negocio. Solo se ven como
+respuesta `ErrorResponse` (ADR-011), con el `correlationId` en el
+header `X-Correlation-Id`.
 
 ## Causas probables
 
