@@ -865,6 +865,15 @@ to move to a shared store to remain effective.
 - Not effective across multiple app instances without a shared store
   — noted as a known limitation, not a current requirement.
 
+### Update (Fase 3, Semana 0)
+
+Detrás de un balanceador de carga, todas las peticiones llegan con la
+dirección del balanceador y no con la del cliente, así que el límite
+por IP trataría a todos los usuarios como uno solo y dejaría de
+proteger sin dar ninguna señal. La política de `X-Forwarded-For` queda
+como deuda de Fase 3 (tarea 5.5 del plan). Además, con varias
+instancias cada una lleva su propio contador, como ya indicaba la
+sección de consecuencias.
 
 ---
 
@@ -917,3 +926,90 @@ Fase 3 puede comenzar sobre esta base.
 
 #### Negative
 - Ninguna identificada — el gate pasó limpio.
+
+---
+
+## ADR-020: Entrada a Fase 3 — Gate de verificación
+
+### Status
+Accepted
+
+### Context
+
+Fase 3 construye infraestructura (imagen, Terraform, AWS) sobre la
+aplicación que cerró Fase 2. Desplegar sobre una base con secretos en
+el repositorio o rutas sin tests de autorización expondría esos
+problemas en lugar de resolverlos, así que antes de escribir
+infraestructura se verificó con evidencia fresca (2026-10-09 al
+2026-10-11) que la base sigue endurecida.
+
+### Decision
+
+El gate de entrada se evaluó contra los cuatro criterios definidos
+para la semana 0:
+
+1. **Sin riesgo de seguridad crítico abierto.** `mvn verify` en
+   `BUILD SUCCESS`: 142 tests unitarios y 36 de integración, sin
+   fallos. Los commits más recientes de `WebSecurityConfig` (rate limiting, #163)
+   y `ReferenceController` (catálogo de eventos, #162) son los de las
+   semanas 7-9 de Fase 2: no hay cambios posteriores al cierre. El fix de
+   nombres de archivo generados por el servidor (#159) sigue presente. Los 5 documentos de cierre de
+   Fase 2 existen.
+2. **Arranque solo con variables de entorno.** El `.jar` arranca con
+   el perfil `prod` recibiendo todo por variables, falla sin
+   `JWT_SECRET` y falla con un secreto de menos de 64 caracteres.
+   Lista de variables en `docs/infra/environment-variables.md`.
+3. **Lista explícita del estado en disco local.** Inventario en
+   `docs/infra/local-filesystem-inventory.md`: el único uso es el
+   archivo temporal por petición bajo `java.io.tmpdir/tempUpload`,
+   que se borra en `finally`.
+4. **Criterio único de "verde".** Definido en
+   `docs/infra/green-criterion.md` (`mvn clean verify` más smoke test
+   manual del `.jar`).
+
+Hallazgos corregidos durante el gate:
+
+- `spring-boot-maven-plugin` no tenía versión y Maven resolvió
+  `4.2.0-M2` (una versión milestone). Se fijó en `3.2.5`, igual que
+  el BOM de dependencias.
+- El runbook `import-export-rejected.md` seguía listando los eventos
+  de import/export como pendientes; se reemplazó por los cuatro
+  eventos reales y se alineó el catálogo de eventos.
+
+Corrección de línea base: el ADR-019 y la retrospectiva de Fase 2
+citan "145+ unit / 35+ integration". Los reportes reales dan **142
+unitarios y 36 de integración**; no se encontraron tests borrados, por
+lo que la cifra anterior era imprecisa. Esta entrada fija la línea
+base de Fase 3.
+
+El gate de entrada de Fase 3 aprueba. Las semanas 1-2 pueden
+comenzar.
+
+### Deudas conscientes que entran a Fase 3
+
+| Deuda | Origen | Dónde se resuelve |
+|---|---|---|
+| Política de `X-Forwarded-For` para el rate limiting detrás de un balanceador | Nota del plan de Fase 3 (sección 5.5); no estaba registrada en el ADR-018 | Tarea 5.5 |
+| Rate limiting en memoria, por instancia: con varias instancias, cada una cuenta por separado (limitación ya descrita en el ADR-018) | ADR-018 | Sin tarea asignada; el plan contempla despliegues con varias instancias, así que hay que decidirlo al fijar su número |
+| `tempUpload` y su dependencia de la ruta temporal local | Inventario de este gate | Tarea 3.5 |
+| Spooling implícito de Spring Boot para subidas multipart (no verificado) | Inventario de este gate | Revisar en la tarea 3.5 |
+| `/actuator/health` documentado en el README pero sin dependencia Actuator | Criterio de verde | Semanas 1-2 |
+| La CI no ejecuta `package`: no construye ni reempaqueta el `.jar` | Criterio de verde | Al ampliar la pipeline |
+| Valores literales de desarrollo: usuario y contraseña de PostgreSQL y `jwtSecret` de `dev`, `jwtSecret` de `test` | Revisión de propiedades | Aceptados; el `jwtSecret` de `dev` se verificó distinto del real |
+| Acoplamiento de `UserService` con DTOs de la capa `api` (ADR-012) | Fase 1, arrastrada de Fase 2 | Sin tarea asignada en el plan de Fase 3; sigue abierta |
+| `mvnw` existe pero no se usa en CI ni en las instrucciones | Criterio de verde | Decisión futura |
+
+### Consequences
+
+#### Positive
+- Fase 3 arranca con evidencia reciente, no con la memoria de un
+  cierre anterior.
+- Las deudas que entran quedan nombradas, con origen y destino.
+- Se corrigieron dos desfases reales (plugin sin versión, runbook
+  desactualizado) antes de que afectaran al despliegue.
+
+#### Negative
+- La retrospectiva de Fase 2 y el ADR-019 conservan la cifra
+  imprecisa de tests; la corrección vive solo en este ADR.
+- Varias deudas dependen de tareas posteriores y no se cierran hasta
+  entonces.
