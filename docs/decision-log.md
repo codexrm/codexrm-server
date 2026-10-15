@@ -1013,3 +1013,43 @@ comenzar.
   imprecisa de tests; la corrección vive solo en este ADR.
 - Varias deudas dependen de tareas posteriores y no se cierran hasta
   entonces.
+
+---
+
+## ADR-021: English as the Working Language
+
+### Status
+Accepted
+
+### Context
+
+Project artifacts were written in a mix of English and Spanish. Code,
+identifiers, commit messages and ADR-001 to ADR-018 are in English, while
+some documents (ADR-019, ADR-020, runbooks, retrospectives and parts of
+`docs/infra/`) are in Spanish. The mix makes the repository harder to read
+and to share.
+
+### Decision
+
+From 2026-10-15, all work is written in English: code, comments, log and
+error messages, documentation, ADRs, milestones, issues, pull requests and
+commit messages.
+
+Existing Spanish text in `codexrm-server` is translated as part of the
+milestone "Housekeeping: English documentation and accuracy". Translations
+preserve the meaning and facts of the original; historical figures are not
+corrected during translation.
+
+GitHub history (closed issues, milestones, pull requests and past commit
+messages) is not rewritten.
+
+### Consequences
+
+#### Positive
+- One language across the repository once the translation is complete.
+- New contributors and reviewers can read every document.
+
+#### Negative
+- The repository is bilingual until the milestone is finished.
+- Translation effort, and the risk of changing the meaning of past
+  decisions; mitigated by translating without altering facts.
