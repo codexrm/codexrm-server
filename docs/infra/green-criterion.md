@@ -1,58 +1,58 @@
-# Criterio de "está verde" para Fase 3
+# "It's green" criterion for Phase 3
 
-Versión vigente: 2026-10-11 (semana 0). Se amplía semana a semana,
-a medida que entran Docker, Actuator y Terraform. Parte de la lista
-de 13 pasos del plan de Fase 3.
+Current version: 2026-10-11 (week 0). It is extended week by week,
+as Docker, Actuator and Terraform come in. It starts from the 13-step
+list in the Phase 3 plan.
 
-## Criterio vigente hoy
+## Current criterion
 
-### Parte A: build y tests (paso 1 del plan)
+### Part A: build and tests (plan step 1)
 
-Desde `codexrm-server`, con Docker Desktop abierto (Testcontainers
-levanta PostgreSQL):
+From `codexrm-server`, with Docker Desktop open (Testcontainers
+starts PostgreSQL):
 
     mvn clean verify
 
-Está verde si termina en `BUILD SUCCESS`, sin fallos, con al menos
-142 tests unitarios y 36 de integración (línea base de entrada a
-Fase 3, medida con los reportes de surefire y failsafe).
+It is green if it ends in `BUILD SUCCESS`, with no failures, with at
+least 142 unit tests and 36 integration tests (entry baseline for
+Phase 3, measured with the surefire and failsafe reports).
 
-### Parte B: smoke test manual del `.jar` (pasos 3, 9 y 11)
+### Part B: manual smoke test of the `.jar` (plan steps 3, 9 and 11)
 
-1. Levantar la base (`docker compose up -d db`) y arrancar el `.jar`
-   con el perfil `prod` y las variables de
+1. Start the database (`docker compose up -d db`) and start the `.jar`
+   with the `prod` profile and the variables from
    `docs/infra/environment-variables.md`.
-2. `POST /api/auth/signin` con un usuario de prueba: debe devolver
-   `200` con un token. El límite de rate limiting en `prod` es de
-   5 intentos por minuto por IP.
-3. En la consola, los logs deben salir en JSON, y los de una
-   petición llevan `correlationId`.
+2. `POST /api/auth/signin` with a test user: it must return
+   `200` with a token. The rate limit in `prod` is
+   5 attempts per minute per IP.
+3. In the console, the logs must be JSON, and those of a
+   request carry `correlationId`.
 
-## Relación con la CI
+## Relationship with CI
 
-La CI ejecuta `mvn clean test` y
-`mvn failsafe:integration-test failsafe:verify`. Son los mismos
-tests que la Parte A, pero la CI no ejecuta la fase `package`: no
-construye ni reempaqueta el `.jar`. Un problema de empaquetado (como
-el `spring-boot-maven-plugin` sin versión, corregido en el gate de
-entrada) no lo detecta la CI y sí lo detecta `mvn clean verify`.
+CI runs `mvn clean test` and
+`mvn failsafe:integration-test failsafe:verify`. These are the same
+tests as Part A, but CI does not run the `package` phase: it does not
+build or repackage the `.jar`. A packaging problem (such as the
+`spring-boot-maven-plugin` without a version, fixed in the entry
+gate) is not detected by CI, but is detected by `mvn clean verify`.
 
-## Pasos del plan que todavía no aplican
+## Plan steps that do not apply yet
 
-| Paso | Qué comprueba | Por qué no aplica hoy |
+| Step | What it checks | Why it does not apply today |
 |---|---|---|
-| 2 | `docker build` | Falta la imagen de producción (semanas 1-2) |
-| 4 | `GET /actuator/health` | Falta Actuator, ver hallazgos |
-| 5-8, 12 | `terraform fmt`, `validate`, `plan`, `apply`, `destroy` | Terraform entra en las semanas 5-8 |
-| 10 | El import va a S3 | Es la tarea 3.5 |
-| 13 | Repetir contra AWS real | Ventana de AWS real (semanas 11-13) |
+| 2 | `docker build` | The production image is missing (weeks 1-2) |
+| 4 | `GET /actuator/health` | Actuator is missing, see findings |
+| 5-8, 12 | `terraform fmt`, `validate`, `plan`, `apply`, `destroy` | Terraform comes in during weeks 5-8 |
+| 10 | The import goes to S3 | It is task 3.5 |
+| 13 | Repeat against real AWS | Real AWS window (weeks 11-13) |
 
-## Hallazgos
+## Findings
 
-- El `README.md` documenta `/actuator/health`, pero el `pom.xml` no
-  incluye `spring-boot-starter-actuator`: el endpoint no existe hoy.
-  El plan lo resuelve en las semanas 1-2.
-- Existe el wrapper `mvnw`, pero ni la CI ni las instrucciones del
-  proyecto lo usan: la CI usa el `mvn` del runner y en local se usa
-  el `mvn` instalado. Se deja así; unificarlos para mayor
-  reproducibilidad queda como decisión futura.
+- The `README.md` documents `/actuator/health`, but the `pom.xml` does
+  not include `spring-boot-starter-actuator`: the endpoint does not
+  exist today. The plan resolves it in weeks 1-2.
+- The `mvnw` wrapper exists, but neither CI nor the project
+  instructions use it: CI uses the runner's `mvn` and locally the
+  installed `mvn` is used. It is left as is; unifying them for greater
+  reproducibility remains a future decision.

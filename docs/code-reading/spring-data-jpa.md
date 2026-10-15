@@ -1,56 +1,57 @@
-# Lectura de código: Spring Data JPA
+# Code reading: Spring Data JPA
 
-## Qué leí
+## What I read
 
-- Spring Data JPA (repositorios)
-- Métodos como `findById`, `findAll`
-- Query derivation (ej: `findByUsernameContaining`)
-- Uso de interfaces `JpaRepository`
-
----
-
-## Qué entendí
-
-Spring Data JPA permite crear consultas automáticamente a partir del nombre de los métodos.
-
-Ejemplo:
-- `findByUsernameContaining` genera una consulta SQL con LIKE
-- `findById` usa internamente el EntityManager
-
-También entendí que:
-- No es necesario escribir SQL manual para consultas simples
-- El framework genera las queries dinámicamente
-- Se basa en proxies que implementan las interfaces de repositorio
+- Spring Data JPA (repositories)
+- Methods such as `findById`, `findAll`
+- Query derivation (e.g. `findByUsernameContaining`)
+- Use of `JpaRepository` interfaces
 
 ---
 
-## Qué no entendí
+## What I understood
 
-- Cómo funciona internamente la generación de proxies
-- Cómo Spring transforma exactamente los nombres de métodos en queries SQL
-- Detalles internos del EntityManager
+Spring Data JPA makes it possible to create queries automatically from
+method names.
+
+Example:
+- `findByUsernameContaining` generates a SQL query with LIKE
+- `findById` uses the EntityManager internally
+
+I also understood that:
+- It is not necessary to write manual SQL for simple queries
+- The framework generates the queries dynamically
+- It relies on proxies that implement the repository interfaces
 
 ---
 
-## Qué puedo aplicar en codexrm-server
+## What I did not understand
 
-- Seguir usando query derivation para consultas simples
-- Evitar escribir consultas manuales innecesarias
-- Mantener nombres de métodos claros y descriptivos
-- Aprovechar mejor `JpaRepository`
+- How proxy generation works internally
+- How exactly Spring transforms method names into SQL queries
+- Internal details of the EntityManager
 
 ---
 
-## Qué decisiones de diseño tomaron y si estoy de acuerdo
+## What I can apply in codexrm-server
 
-Spring Data JPA prioriza:
-- Simplicidad
-- Reducción de código repetitivo
-- Abstracción de la base de datos
+- Keep using query derivation for simple queries
+- Avoid writing unnecessary manual queries
+- Keep method names clear and descriptive
+- Make better use of `JpaRepository`
 
-Estoy de acuerdo con este enfoque porque:
-- Hace el código más limpio
-- Reduce errores
-- Acelera el desarrollo
+---
 
-Sin embargo, en casos complejos puede ser necesario usar queries personalizadas.
+## What design decisions they made and whether I agree
+
+Spring Data JPA prioritizes:
+- Simplicity
+- Reduction of repetitive code
+- Database abstraction
+
+I agree with this approach because:
+- It makes the code cleaner
+- It reduces errors
+- It speeds up development
+
+However, in complex cases it may be necessary to use custom queries.
