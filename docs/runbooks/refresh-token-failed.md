@@ -1,64 +1,64 @@
 # Runbook — Refresh Token Failed
 
-## Síntoma
+## Symptom
 
-- `POST /api/auth/refresh-token` devuelve `401`, `403` o `400` inesperado.
-- El cliente reporta que el refresh token "dejó de funcionar".
-- Logout parece no invalidar el refresh token o lo invalida demasiado pronto.
+- `POST /api/auth/refresh-token` returns an unexpected `401`, `403` or `400`.
+- The client reports that the refresh token "stopped working".
+- Logout seems not to invalidate the refresh token, or invalidates it too early.
 
-## Cómo reproducir
+## How to reproduce
 
-1. Hacer login y guardar JWT + refresh token.
-2. Invocar `POST /api/auth/refresh-token` con token válido.
-3. Repetir con token expirado, malformado o revocado.
-4. Repetir después de `POST /api/auth/logout`.
+1. Log in and save the JWT + refresh token.
+2. Call `POST /api/auth/refresh-token` with a valid token.
+3. Repeat with an expired, malformed or revoked token.
+4. Repeat after `POST /api/auth/logout`.
 
-## Qué mirar primero
+## What to check first
 
-- ¿El token existe en base de datos?
-- ¿Está expirado según la política vigente?
-- ¿Fue revocado por logout o por rotación (cada uso de
-  `/refresh-token` invalida el token anterior y emite uno nuevo)?
-- ¿La configuración de expiración corresponde al perfil actual?
+- Does the token exist in the database?
+- Is it expired according to the current policy?
+- Was it revoked by logout or by rotation (each use of
+  `/refresh-token` invalidates the previous token and issues a new one)?
+- Does the expiration configuration match the current profile?
 
-## Logs y eventos esperados
+## Expected logs and events
 
-- Evento de refresh exitoso o fallido con `correlationId`.
-- Motivo general: expirado, ausente, revocado o inválido.
-- Respuesta consistente con el contrato de error de auth
-  (`ErrorResponse`, ver `docs/decision-log.md` ADR-011).
+- Successful or failed refresh event with `correlationId`.
+- General reason: expired, missing, revoked or invalid.
+- Response consistent with the auth error contract
+  (`ErrorResponse`, see `docs/decision-log.md` ADR-011).
 
-## Causas probables
+## Likely causes
 
-- Expiración mal configurada por entorno.
-- Refresh token revocado por logout, o invalidado por rotación tras
-  un uso previo (comportamiento esperado desde la semana 4-6 de Fase 2).
-- Divergencia entre la política documentada y la implementación real.
-- Error en logout, rotación o persistencia del token.
+- Expiration misconfigured per environment.
+- Refresh token revoked by logout, or invalidated by rotation after
+  a previous use (expected behavior since week 4-6 of Phase 2).
+- Divergence between the documented policy and the real implementation.
+- Error in logout, rotation or token persistence.
 
-## Cómo resolver
+## How to resolve
 
-1. Confirmar el estado real del token en base de datos (tabla
-   `refreshtoken`, columna `user_id` es única — solo 1 token activo
-   por usuario).
-2. Verificar expiración y timezone con datos concretos.
-3. Revisar la política documentada en `docs/decision-log.md` y en
+1. Confirm the real state of the token in the database (table
+   `refreshtoken`, the `user_id` column is unique — only 1 active token
+   per user).
+2. Verify expiration and timezone with concrete data.
+3. Review the documented policy in `docs/decision-log.md` and in
    `docs/security/jwt-refresh-token-audit.md`.
-4. Reproducir con test de integración antes de corregir
+4. Reproduce with an integration test before fixing
    (`AuthIntegrationTest`).
-5. Si el bug afecta logout o rotación, validar ambos flujos antes de
-   cerrar.
+5. If the bug affects logout or rotation, validate both flows before
+   closing.
 
-## Cómo prevenir que vuelva a ocurrir
+## How to prevent recurrence
 
-- Mantener tests para token válido, expirado, revocado, logout
-  efectivo, doble login, y rotación (`AuthIntegrationTest`).
-- No cambiar expiraciones sin actualizar configuración y docs.
-- Registrar la política de lifecycle en `docs/decision-log.md`.
+- Keep tests for valid token, expired, revoked, effective logout,
+  double login, and rotation (`AuthIntegrationTest`).
+- Do not change expirations without updating configuration and docs.
+- Record the lifecycle policy in `docs/decision-log.md`.
 
-## Enlaces
+## Links
 
-- `AuthIntegrationTest` (tests de JWT/refresh lifecycle)
+- `AuthIntegrationTest` (JWT/refresh lifecycle tests)
 - `docs/security/jwt-refresh-token-audit.md`
-- Configuración de expiraciones por entorno (`application-*.properties`)
-- ADR de política de refresh token en `docs/decision-log.md`
+- Expiration configuration per environment (`application-*.properties`)
+- Refresh token policy ADR in `docs/decision-log.md`
