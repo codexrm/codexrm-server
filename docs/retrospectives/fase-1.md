@@ -1,136 +1,134 @@
-# Retrospectiva Fase 1
+# Phase 1 Retrospective
 
-## ¿Qué salió bien?
+## What went well?
 
-- La red de seguridad de tests (134 unit + 21 integration tests) permitió
-  encontrar y corregir con confianza vulnerabilidades reales antes del
-  cierre de fase: un JWT secret y una password de admin hardcodeados en
-  producción (#136), y un path traversal en el endpoint de export que
-  permitía escribir archivos fuera de la carpeta esperada (#137) — el
-  hallazgo más serio de toda la fase.
-- El manejo de errores quedó unificado: todos los caminos de fallo
-  (excepciones de negocio, 401, 403, JSON malformado, archivos
-  demasiado grandes) devuelven la misma estructura `ErrorResponse`,
-  en vez de mezclar formatos según qué capa rechazara la request.
-- Cada corrección se validó con evidencia real — logs de arranque,
-  `mvn verify`, capturas de GitHub Actions — en vez de asumir que
-  "debería funcionar".
-- La disciplina de un PR por issue, con commits explicando el
-  *porqué* y no solo el *qué*, dejó un historial de git que se puede
-  auditar semana por semana.
+- The test safety net (134 unit + 21 integration tests) made it possible
+  to find and fix real vulnerabilities with confidence before the phase
+  closed: a hardcoded JWT secret and admin password in production
+  (#136), and a path traversal in the export endpoint that allowed
+  writing files outside the expected folder (#137) — the most serious
+  finding of the whole phase.
+- Error handling became unified: all failure paths (business
+  exceptions, 401, 403, malformed JSON, files that are too large)
+  return the same `ErrorResponse` structure, instead of mixing formats
+  depending on which layer rejected the request.
+- Every fix was validated with real evidence — startup logs,
+  `mvn verify`, GitHub Actions screenshots — instead of assuming that
+  "it should work".
+- The discipline of one PR per issue, with commits explaining the
+  *why* and not just the *what*, left a git history that can be
+  audited week by week.
 
-## ¿Qué fue más difícil de lo esperado?
+## What was harder than expected?
 
-Un problema de compatibilidad de versiones entre Testcontainers y el
-Docker Engine local, no del código del proyecto. Al correr los tests
-de integración (Spring Boot + JUnit 5 + Testcontainers + PostgreSQL
-desde IntelliJ en Windows), Testcontainers detectaba el socket de
-Docker (`npipe://`) pero el daemon respondía con un
-`BadRequestException` (400) y campos vacíos (`ServerVersion`,
-`Driver`, `OperatingSystem`, `KernelVersion`), terminando siempre en
+A version compatibility problem between Testcontainers and the local
+Docker Engine, not in the project's code. When running the integration
+tests (Spring Boot + JUnit 5 + Testcontainers + PostgreSQL from
+IntelliJ on Windows), Testcontainers detected the Docker socket
+(`npipe://`) but the daemon answered with a
+`BadRequestException` (400) and empty fields (`ServerVersion`,
+`Driver`, `OperatingSystem`, `KernelVersion`), always ending in
 `Could not find a valid Docker environment`.
 
-La causa raíz: Testcontainers 1.21.3 usa por defecto la versión 1.32
-de la API de Docker, pero el Docker Engine local (29.4.3) requiere
-como mínimo la 1.40 — una incompatibilidad de versiones de API, no un
-problema de instalación ni de configuración del proyecto. Se
-descartó todo lo demás en el camino: dependencias Maven, reimport del
-proyecto, y la configuración de `BaseIntegrationTest`, que estaba
-correcta desde el principio.
+The root cause: Testcontainers 1.21.3 uses Docker API version 1.32 by
+default, but the local Docker Engine (29.4.3) requires at least
+1.40 — an API version incompatibility, not an installation or project
+configuration problem. Everything else was ruled out along the way:
+Maven dependencies, project reimport, and the `BaseIntegrationTest`
+configuration, which had been correct from the start.
 
-La solución fue actualizar `testcontainers.version` de `1.21.3` a
-`2.0.5` en el `pom.xml` (alternativa más simple que forzar
-`api.version=1.41` vía `systemPropertyVariables` en el plugin de
-Surefire). Al resolver esa incompatibilidad apareció un segundo
-problema, más chico: `RefreshToken` usaba
-`@GeneratedValue(strategy = GenerationType.AUTO)`, que Hibernate
-contra PostgreSQL en este contexto no resolvía de forma consistente;
-cambiarlo a `GenerationType.IDENTITY` lo resolvió. Con ambos cambios,
-`ApplicationIntegrationTest` (y el resto de la suite crítica) volvió
-a correr en verde de forma estable.
+The solution was to update `testcontainers.version` from `1.21.3` to
+`2.0.5` in the `pom.xml` (a simpler alternative than forcing
+`api.version=1.41` through `systemPropertyVariables` in the Surefire
+plugin). Resolving that incompatibility revealed a second, smaller
+problem: `RefreshToken` used
+`@GeneratedValue(strategy = GenerationType.AUTO)`, which Hibernate
+against PostgreSQL in this context did not resolve consistently;
+changing it to `GenerationType.IDENTITY` fixed it. With both changes,
+`ApplicationIntegrationTest` (and the rest of the critical suite) went
+back to running green and stable.
 
-## ¿Qué recorté o pospuse?
+## What did I cut or postpone?
 
-- **Reestructuración de paquetes (semana 19):** evaluada explícitamente
-  contra las 4 condiciones de entrada del plan. Tres se cumplían (suite
-  crítica verde, CI verde, sin bugs críticos abiertos), pero no había
-  una razón concreta para mover archivos ahora — la estructura actual
-  no generó fricción real durante toda la fase. Documentado en ADR-012.
-- **Auditoría OWASP exhaustiva del import/export:** el hardening de la
-  semana 17 cerró el hallazgo crítico (path traversal), pero una
-  revisión OWASP más exhaustiva y sistemática queda para Fase 2, según
-  el propio plan de corte.
-- **Acoplamiento `UserService` ↔ DTOs de API:** durante la evaluación
-  de la semana 19 se encontró que `UserService` recibe tipos de la
-  capa `api` directamente (a diferencia de `ReferenceService` y
-  `RoleService`, que sí respetan el límite de capas). Corregirlo
-  implica cambiar firmas de métodos, así que se documentó como deuda
-  explícita (ADR-013) en vez de forzarlo en una semana de solo
-  documentación.
+- **Package restructuring (week 19):** explicitly evaluated against the
+  plan's 4 entry conditions. Three were met (critical suite green, CI
+  green, no critical bugs open), but there was no concrete reason to
+  move files now — the current structure caused no real friction
+  during the whole phase. Documented in ADR-012.
+- **Exhaustive OWASP audit of import/export:** the week 17 hardening
+  closed the critical finding (path traversal), but a more exhaustive
+  and systematic OWASP review is left for Phase 2, according to the
+  cut plan itself.
+- **`UserService` ↔ API DTO coupling:** during the week 19 evaluation
+  it was found that `UserService` receives `api` layer types directly
+  (unlike `ReferenceService` and `RoleService`, which do respect the
+  layer boundary). Fixing it involves changing method signatures, so
+  it was documented as explicit debt (ADR-013) instead of forcing it
+  in a documentation-only week.
 
-Un hallazgo similar pero más chico — lógica de ownership viviendo como
-método privado en `ReferenceController` en vez de en el service — sí
-se corrigió durante la verificación final de esta semana, porque era
-de bajo riesgo (método privado, sin contrato externo) y no requería
-tocar ningún test más allá de uno.
+A similar but smaller finding — ownership logic living as a private
+method in `ReferenceController` instead of in the service — was fixed
+during this week's final verification, because it was low risk
+(private method, no external contract) and did not require touching
+any test beyond one.
 
-## ¿Qué aprendí que no esperaba?
+## What did I learn that I did not expect?
 
-Seguridad real, más allá de "usar HTTPS" o "no compartir contraseñas".
-Cosas concretas como: un secret JWT corto de un carácter rompe el
-arranque completo de la app (y hay que generarlo con un comando
-verificable, no copiando y pegando a ojo); un parámetro de nombre de
-archivo sin sanitizar puede convertirse en una escritura de archivo
-arbitraria; y que la diferencia entre "funciona en mi máquina" y
-"está verificado" es correr el comando y leer el resultado, no confiar
-en la memoria de la corrida anterior.
+Real security, beyond "use HTTPS" or "don't share passwords". Concrete
+things such as: a JWT secret that is one character too short breaks
+the whole app startup (and it has to be generated with a verifiable
+command, not by copying and pasting by eye); an unsanitized file name
+parameter can turn into an arbitrary file write; and that the
+difference between "it works on my machine" and "it is verified" is
+running the command and reading the result, not trusting the memory of
+the previous run.
 
-## Post-mortem de la fase
+## Phase post-mortem
 
 [JWT Secret Length Failures Across Environments](../post-mortems/fase-1-jwt-secret-length.md) —
-un bug real, repetido tres veces durante el issue #136, con impacto,
-causa raíz, fix y prevención documentados mientras el contexto estaba
-fresco.
+a real bug, repeated three times during issue #136, with impact,
+root cause, fix and prevention documented while the context was
+fresh.
 
-## Estado del proyecto al cerrar la fase
+## Project status at phase close
 
-- [x] Stack actualizado (Java 21, Spring Boot 3.2+)
-- [x] `WebSecurityConfigurerAdapter` eliminado (migrado a `SecurityFilterChain`)
-- [x] Docker funcionando para desarrollo local
-- [x] Spring Profiles configurados (dev/test/prod, verificados funcionando)
-- [x] CORS centralizado (`CorsConfig`/`CorsProperties`, sin `@CrossOrigin` en controllers)
-- [x] Flyway con migrations versionadas (tabla `app_user`, no `"User"`)
-- [x] `@Valid` en todos los controllers (13/13 `@RequestBody` confirmados)
-- [x] No existe `return null` donde debería haber `Page.empty()` (un caso encontrado en `buildPageDTO` resultó ser código muerto inalcanzable, sin impacto en la API)
-- [x] Manejo de errores centralizado (`GlobalExceptionHandler`, `AuthEntryPointJwt`, `AccessDeniedHandlerImpl`, misma estructura `ErrorResponse`)
-- [x] DTOConverter refactorizado
-- [x] Lógica de roles sin duplicación
-- [x] Controllers delgados (corregido: `filterUserReferences` movido de `ReferenceController` a `ReferenceService` como `filterOwnedReferences`)
-- [x] URLs REST normalizadas (24 rutas auditadas: plural, lowercase, sin verbos como nombre de recurso)
-- [x] Tests unitarios y suite crítica de integración verdes (140 unit + 21 integration, `BUILD SUCCESS`)
-- [x] CI básica verde (últimas 7+ corridas en `dev` en verde en GitHub Actions)
-- [x] Documentación mínima útil completa (README, `architecture.md`, `decision-log.md`, `testing.md`, `integration-testing.md`)
-- [x] Existe retrospectiva de fase y un post-mortem corto
-- [x] Reestructuración de paquetes ejecutada o pospuesta con criterio explícito (pospuesta, ADR-012)
+- [x] Updated stack (Java 21, Spring Boot 3.2+)
+- [x] `WebSecurityConfigurerAdapter` removed (migrated to `SecurityFilterChain`)
+- [x] Docker working for local development
+- [x] Spring Profiles configured (dev/test/prod, verified working)
+- [x] Centralized CORS (`CorsConfig`/`CorsProperties`, no `@CrossOrigin` in controllers)
+- [x] Flyway with versioned migrations (`app_user` table, not `"User"`)
+- [x] `@Valid` in all controllers (13/13 `@RequestBody` confirmed)
+- [x] There is no `return null` where `Page.empty()` should be (one case found in `buildPageDTO` turned out to be unreachable dead code, with no impact on the API)
+- [x] Centralized error handling (`GlobalExceptionHandler`, `AuthEntryPointJwt`, `AccessDeniedHandlerImpl`, same `ErrorResponse` structure)
+- [x] DTOConverter refactored
+- [x] Role logic without duplication
+- [x] Thin controllers (fixed: `filterUserReferences` moved from `ReferenceController` to `ReferenceService` as `filterOwnedReferences`)
+- [x] Normalized REST URLs (24 routes audited: plural, lowercase, no verbs as resource name)
+- [x] Unit tests and critical integration suite green (140 unit + 21 integration, `BUILD SUCCESS`)
+- [x] Basic CI green (last 7+ runs on `dev` green in GitHub Actions)
+- [x] Minimum useful documentation complete (README, `architecture.md`, `decision-log.md`, `testing.md`, `integration-testing.md`)
+- [x] A phase retrospective and a short post-mortem exist
+- [x] Package restructuring executed or postponed with explicit criteria (postponed, ADR-012)
 
-## ¿Estoy listo para la Fase 2?
+## Am I ready for Phase 2?
 
-**Sí.** Los 18 ítems de la checklist de cierre están confirmados con
-evidencia real (no de memoria): salida de `mvn verify`, capturas de
-GitHub Actions, y búsquedas directas en el código durante esta misma
-semana. Los dos hallazgos de arquitectura que aparecieron en el camino
-(acoplamiento de `UserService` con DTOs de API, y el gate de
-reestructuración) quedaron documentados con criterio explícito en vez
-de ignorados o forzados fuera de tiempo — que es exactamente el
-comportamiento que la Fase 1 buscaba instalar como hábito.
+**Yes.** The 18 items of the closure checklist are confirmed with real
+evidence (not from memory): `mvn verify` output, GitHub Actions
+screenshots, and direct searches in the code during this same week.
+The two architecture findings that appeared along the way
+(`UserService` coupling with API DTOs, and the restructuring gate)
+were documented with explicit criteria instead of being ignored or
+forced out of time — which is exactly the behavior Phase 1 aimed to
+install as a habit.
 
-La deuda pendiente (ADR-013, auditoría OWASP exhaustiva) es conocida,
-está escrita, y no bloquea nada del funcionamiento actual del sistema.
+The pending debt (ADR-013, exhaustive OWASP audit) is known, written
+down, and blocks nothing in the current functioning of the system.
 
-## Preview de Fase 2 — Lo que viene
+## Phase 2 Preview — What's coming
 
-- Revisión profunda de reglas de autorización en `SecurityFilterChain`
-- `SecurityScheme` para JWT en Swagger UI (botón "Authorize")
-- Validación de inputs más estricta (OWASP)
-- Auditoría OWASP residual sobre import/export y otros endpoints
-- Resolver el acoplamiento
+- Deep review of authorization rules in `SecurityFilterChain`
+- `SecurityScheme` for JWT in Swagger UI ("Authorize" button)
+- Stricter input validation (OWASP)
+- Residual OWASP audit on import/export and other endpoints
+- Resolve the coupling

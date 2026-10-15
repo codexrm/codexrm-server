@@ -1,95 +1,92 @@
-# Retrospectiva Fase 2
+# Phase 2 Retrospective
 
-## ¿Qué salió bien?
+## What went well?
 
-El hallazgo del bug de doble login (semanas 4-6) fue lo mejor logrado
-de toda la fase: no llegó por un reporte de un usuario afectado, sino
-por una auditoría deliberada del lifecycle de JWT/refresh token —
-leer el schema, notar la constraint `UNIQUE` en `user_id`, formular
-la hipótesis "esto debería romper con un segundo login", y
-confirmarla en vivo antes de que jamás se convirtiera en un problema
-real. Es exactamente el tipo de disciplina que esta fase buscaba
-instalar: no esperar a que algo se rompa para investigarlo.
+The discovery of the double login bug (weeks 4-6) was the best
+achievement of the whole phase: it did not come from a report by an
+affected user, but from a deliberate audit of the JWT/refresh token
+lifecycle — reading the schema, noticing the `UNIQUE` constraint on
+`user_id`, formulating the hypothesis "this should break on a second
+login", and confirming it live before it ever became a real problem.
+It is exactly the kind of discipline this phase aimed to install: not
+waiting for something to break in order to investigate it.
 
-También salieron bien: el `correlationId` funcionando de punta a
-punta desde el primer intento en vivo (el mismo UUID en el header de
-respuesta y en el log de `AuthEntryPointJwt`, un camino que corre
-fuera del flujo normal de controller); y el hecho de que 3 de los 4
-hallazgos de seguridad reales de la fase (doble login, JWT en
-plaintext, AUDITOR/logout) surgieron de auditorías deliberadas, no de
-casualidad.
+Also going well: the `correlationId` working end to end from the first
+live attempt (the same UUID in the response header and in the
+`AuthEntryPointJwt` log, a path that runs outside the normal
+controller flow); and the fact that 3 of the phase's 4 real security
+findings (double login, plaintext JWT, AUDITOR/logout) came out of
+deliberate audits, not by chance.
 
-## ¿Qué fue más difícil de lo esperado?
+## What was harder than expected?
 
-Alternar entre Docker (perfil `prod`) y `mvn spring-boot:run` (perfil
-`dev`) para verificaciones puntuales generó fricción recurrente
-durante toda la fase: credenciales de datasource distintas
-(`postgres`/`postgres` vs `codexrm`/`codexrm`), conflictos de puerto
-cuando ambos quedaban corriendo a la vez, y la necesidad de recordar
-revertir cambios temporales en `application-dev.properties` antes de
-cada commit. Ninguno de estos fue un bug del proyecto — todos fueron
-fricción de entorno local — pero consumieron tiempo real en más de
-una verificación (Swagger con JWT, doble login, rate limiting).
+Switching between Docker (`prod` profile) and `mvn spring-boot:run`
+(`dev` profile) for one-off verifications caused recurring friction
+throughout the phase: different datasource credentials
+(`postgres`/`postgres` vs `codexrm`/`codexrm`), port conflicts when
+both were left running at once, and the need to remember to revert
+temporary changes in `application-dev.properties` before each commit.
+None of these was a project bug — all were local environment
+friction — but they consumed real time in more than one verification
+(Swagger with JWT, double login, rate limiting).
 
-## ¿Qué recorté o pospuse?
+## What did I cut or postpone?
 
-- **ADR-012 (acoplamiento `UserService`/DTOs de api):** evaluado
-  explícitamente en la semana 0 contra las 5 categorías del gate de
-  Fase 2 (auth, OWASP, observabilidad, rate limiting, runbooks) — no
-  encaja en ninguna. Es deuda de arquitectura general, no de
-  seguridad, y queda pospuesta a Fase 3.
-- Nada más quedó pospuesto sin resolver dentro del alcance real de
-  Fase 2 — los 4 hallazgos de seguridad encontrados durante la fase
-  se corrigieron en el momento, no se dejaron para después.
+- **ADR-012 (`UserService`/api DTO coupling):** explicitly evaluated in
+  week 0 against the 5 categories of the Phase 2 gate (auth, OWASP,
+  observability, rate limiting, runbooks) — it fits none. It is
+  general architecture debt, not security, and is postponed to
+  Phase 3.
+- Nothing else was left postponed and unresolved within the real scope
+  of Phase 2 — the 4 security findings found during the phase were
+  fixed on the spot, not left for later.
 
-## ¿Qué aprendí que no esperaba?
+## What did I learn that I did not expect?
 
-Que un fallback de errores genérico y bien diseñado (el `500`
-estándar de `GlobalExceptionHandler`, sin filtrar detalles internos)
-puede esconder perfectamente un bug completamente prevenible durante
-mucho tiempo — el doble login estuvo ahí, sin detectarse, protegido
-por un manejo de errores que hacía su trabajo correctamente pero no
-alertaba de que el caso en sí era evitable. También aprendí lo frágil
-que puede ser una combinación aparentemente inocente como
-`@Component` + `@MockBean` en Spring Boot: agregar una anotación
-estándar rompió silenciosamente cada test de controller del proyecto,
-sin ningún mensaje de error que apuntara a la causa real.
+That a well-designed generic error fallback (the standard `500` from
+`GlobalExceptionHandler`, without leaking internal details) can
+perfectly hide a completely preventable bug for a long time — the
+double login was there, undetected, protected by error handling that
+did its job correctly but did not warn that the case itself was
+avoidable. I also learned how fragile a seemingly innocent combination
+like `@Component` + `@MockBean` can be in Spring Boot: adding a
+standard annotation silently broke every controller test in the
+project, with no error message pointing to the real cause.
 
-## Post-mortem de la fase
+## Phase post-mortem
 
 [Double Login Crashes with 500](../post-mortems/fase-2-double-login-crash.md) —
-impacto, causa raíz, fix y prevención documentados del hallazgo más
-valioso de la fase.
+impact, root cause, fix and prevention documented for the most
+valuable finding of the phase.
 
-## Checklist de cierre (verificada con evidencia, semana 12)
+## Closure checklist (verified with evidence, week 12)
 
-- [x] Autorización endurecida (matriz vigente, confirmado vía `git log`)
-- [x] JWT/refresh testeados (`mvn verify`, upsert + rotación)
-- [x] CORS por entorno (dev/prod distintos, sin wildcard)
-- [x] OWASP import/export cerrado (nombres 100% server-generated, confirmado vía `git log`)
-- [x] Logs estructurados visibles (JSON, correlationId presente)
-- [x] Rate limiting con 429 testeado (verificado en vivo y en tests)
-- [x] Suite crítica ampliada verde (`mvn verify`, 145+ unit / 35+ integration)
-- [x] Baseline de carga documentado (k6, 2 escenarios)
-- [x] Runbooks publicados (los 3, verificados en vivo)
-- [x] Sin vulnerabilidad crítica sin fix (4 hallazgos, todos resueltos)
+- [x] Authorization hardened (matrix current, confirmed via `git log`)
+- [x] JWT/refresh tested (`mvn verify`, upsert + rotation)
+- [x] CORS per environment (different dev/prod, no wildcard)
+- [x] OWASP import/export closed (file names 100% server-generated, confirmed via `git log`)
+- [x] Structured logs visible (JSON, correlationId present)
+- [x] Rate limiting with 429 tested (verified live and in tests)
+- [x] Expanded critical suite green (`mvn verify`, 145+ unit / 35+ integration)
+- [x] Load baseline documented (k6, 2 scenarios)
+- [x] Runbooks published (all 3, verified live)
+- [x] No critical vulnerability without a fix (4 findings, all resolved)
 
-Ver [ADR-019](../decision-log.md) para el detalle completo del cierre.
+See [ADR-019](../decision-log.md) for the full detail of the closure.
 
-## ¿Estoy lista para la Fase 3?
+## Am I ready for Phase 3?
 
-**Sí.** Los 10 ítems de la checklist de cierre están confirmados con
-evidencia real generada hoy (salida de `mvn verify`, historial de
-`git log` sobre los archivos críticos, no memoria de semanas
-anteriores). Los 4 hallazgos de seguridad reales de la fase se
-encontraron por auditoría deliberada y se corrigieron en el momento,
-no quedaron pendientes. La única deuda conocida (ADR-012) es
-arquitectura general, explícitamente fuera del alcance de seguridad
-de Fase 2, documentada como candidata a Fase 3 en vez de ignorada.
+**Yes.** The 10 items of the closure checklist are confirmed with real
+evidence generated today (`mvn verify` output, `git log` history on
+the critical files, not memory of earlier weeks). The 4 real security
+findings of the phase were found through deliberate audit and fixed on
+the spot, none left pending. The only known debt (ADR-012) is general
+architecture, explicitly outside the security scope of Phase 2,
+documented as a Phase 3 candidate instead of ignored.
 
-## Preview de Fase 3
+## Phase 3 Preview
 
-Sin un plan detallado todavía — a definir. Candidatos conocidos desde
-esta fase: resolver ADR-012 (acoplamiento `UserService`), y cualquier
-tema que surja de operar el sistema con la observabilidad y el rate
-limiting ya en producción.
+Without a detailed plan yet — to be defined. Known candidates from
+this phase: resolve ADR-012 (`UserService` coupling), and any topic
+that arises from operating the system with observability and rate
+limiting already in production.
