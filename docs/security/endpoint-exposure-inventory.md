@@ -1,7 +1,7 @@
 # Endpoint Exposure Inventory
 
-Baseline inventory of every API endpoint before hardening (Fase 2,
-Semanas 1-3). Confirmed against `AuthController`,
+Baseline inventory of every API endpoint before hardening (Phase 2,
+Weeks 1-3). Confirmed against `AuthController`,
 `ReferenceController`, `UserController` and `WebSecurityConfig`.
 
 ## Public endpoints (by design)

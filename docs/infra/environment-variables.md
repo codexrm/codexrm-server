@@ -1,33 +1,34 @@
-# Variables de entorno obligatorias
+# Required environment variables
 
-Con el perfil `prod`, la aplicación se configura solo por variables
-de entorno. Ningún secreto está escrito en los archivos de
-propiedades (ADR-009). Verificado el 2026-10-11 arrancando el `.jar`
-con las variables puestas en la terminal y sin ningún `.env`.
+With the `prod` profile, the application is configured only through
+environment variables. No secret is written in the properties files
+(ADR-009). Verified on 2026-10-11 by starting the `.jar` with the
+variables set in the terminal and without any `.env`.
 
-| Variable | Qué es | Verificación |
+| Variable | What it is | Verification |
 |---|---|---|
-| `SPRING_PROFILES_ACTIVE` | Perfil activo (`prod`) | Arranca con `prod` |
-| `SPRING_DATASOURCE_URL` | URL de PostgreSQL | Arranca conectando a la base |
-| `SPRING_DATASOURCE_USERNAME` | Usuario de la base | `${...}` sin respaldo en `application-prod.properties` |
-| `SPRING_DATASOURCE_PASSWORD` | Contraseña de la base | `${...}` sin respaldo en `application-prod.properties` |
-| `JWT_SECRET` | Clave de firma JWT, mínimo 64 caracteres | **Probado**: sin ella la app no arranca; con 62 caracteres tampoco |
-| `CORS_ALLOWED_ORIGINS` | Orígenes web permitidos, separados por coma | Definida en la prueba, requerida por ADR-009 |
-| `ADMIN_INITIAL_PASSWORD` | Contraseña del admin inicial | Definida en la prueba, requerida por ADR-009 |
+| `SPRING_PROFILES_ACTIVE` | Active profile (`prod`) | Starts with `prod` |
+| `SPRING_DATASOURCE_URL` | PostgreSQL URL | Starts and connects to the database |
+| `SPRING_DATASOURCE_USERNAME` | Database user | `${...}` with no fallback in `application-prod.properties` |
+| `SPRING_DATASOURCE_PASSWORD` | Database password | `${...}` with no fallback in `application-prod.properties` |
+| `JWT_SECRET` | JWT signing key, minimum 64 characters | **Tested**: without it the app does not start; with 62 characters it does not start either |
+| `CORS_ALLOWED_ORIGINS` | Allowed web origins, comma-separated | Defined in the test, required by ADR-009 |
+| `ADMIN_INITIAL_PASSWORD` | Initial admin password | Defined in the test, required by ADR-009 |
 
-## Comportamiento verificado
+## Verified behavior
 
-- **Sin `JWT_SECRET`:** falla con `Could not resolve placeholder
+- **Without `JWT_SECRET`:** fails with `Could not resolve placeholder
   'JWT_SECRET'`.
-- **Con `JWT_SECRET` de menos de 64 caracteres:** falla con
+- **With a `JWT_SECRET` shorter than 64 characters:** fails with
   `JWT secret must be at least 64 characters long for HS512`.
-- **Con todas las variables:** arranca y escucha en el puerto `8080`
-  (el perfil `prod` no define `server.port`).
+- **With all variables:** starts and listens on port `8080`
+  (the `prod` profile does not define `server.port`).
 
-## Valores literales aceptados como deuda consciente
+## Literal values accepted as conscious debt
 
-- `application-dev.properties`: usuario y contraseña de PostgreSQL
-  (`postgres`) y un `jwtSecret` propio de desarrollo, distinto del
-  `JWT_SECRET` real. Solo aplican al perfil `dev` contra `localhost`.
-- `application-test.properties`: base H2 en memoria y un `jwtSecret`
-  fijo de prueba. Solo existen mientras corre el test.
+- `application-dev.properties`: PostgreSQL user and password
+  (`postgres`) and a development-only `jwtSecret`, different from the
+  real `JWT_SECRET`. They only apply to the `dev` profile against
+  `localhost`.
+- `application-test.properties`: in-memory H2 database and a fixed
+  test `jwtSecret`. They only exist while the test runs.
