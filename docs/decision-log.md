@@ -349,7 +349,7 @@ scale and infrastructure.
 #### Negative
 - Slightly more setup friction for new environments (a `.env` file or
   equivalent must be provisioned before the app can start).
-- No centralized secret rotation or audit trail — deferred to Fase 2
+- No centralized secret rotation or audit trail — deferred to Phase 2
   if the project's security requirements grow.
 
 ---
@@ -439,16 +439,16 @@ each mapped to the correct HTTP status instead of a generic 500.
 
 An exhaustive audit of OpenAPI/Swagger annotation coverage and
 accuracy (beyond the basic `@Operation`/`@Schema` usage already in
-place, per ADR-008) was considered during the Fase 1 documentation
+place, per ADR-008) was considered during the Phase 1 documentation
 week but not performed, as the critical suite, CI, and minimal
 hardening gates already consumed the available time this phase.
 
-This is logged here explicitly as **Fase 2 debt** — it does not block
-the closure of Fase 1.
+This is logged here explicitly as **Phase 2 debt** — it does not block
+the closure of Phase 1.
 
 --- 
 
-## ADR-012: Log UserService/API DTO Coupling as Fase 2 Debt
+## ADR-012: Log UserService/API DTO Coupling as Phase 2 Debt
 
 ### Status
 Deferred
@@ -472,111 +472,110 @@ responsibility to the controller/DTOConverter layer.
 ### Decision
 
 Do not fix this during week 19. Week 19's restructuring PR is scoped
-to physical file moves with zero functional risk ("mover archivos y
-actualizar imports... sin cambios funcionales"); this fix requires
+to physical file moves with zero functional risk ("move files and
+update imports... no functional changes"); this fix requires
 changing method contracts, which is functional-adjacent and violates
 the project's own rule against mixing restructuring with fixes.
 
-This is logged as explicit Fase 2 debt instead, aligning with the
-Fase 2 preview item "evaluar si separar entity/domain tiene valor
-ahora."
+This is logged as explicit Phase 2 debt instead, aligning with the
+Phase 2 preview item "evaluate whether separating entity/domain is
+worthwhile now."
 
 ### Consequences
 
 #### Positive
-- Fase 1 closes without scope creep or last-minute functional risk.
+- Phase 1 closes without scope creep or last-minute functional risk.
 - The inconsistency is documented with enough detail (affected file,
   affected methods, contrast with the other two services) to be
-  picked up quickly in Fase 2.
+  picked up quickly in Phase 2.
 
 #### Negative
 - `UserService` remains inconsistent with `ReferenceService` and
-  `RoleService` until Fase 2.
+  `RoleService` until Phase 2.
 
 ---
 
 
-### Update (Fase 2, Semana 0)
+### Update (Phase 2, Week 0)
 
-Al evaluar el gate de entrada de Fase 2, se revisó este ADR contra
-las 5 categorías que el gate permite como deuda consciente de Fase 2:
-auth, OWASP, observabilidad, rate limiting, runbooks.
+When evaluating the Phase 2 entry gate, this ADR was reviewed against
+the 5 categories the gate allows as conscious Phase 2 debt:
+auth, OWASP, observability, rate limiting, runbooks.
 
-Este hallazgo no encaja en ninguna — es deuda de arquitectura general,
-no de seguridad ni operación. Se reclasifica como **backlog general**,
-candidato a Fase 3 o a cuando surja necesidad concreta de tocar
-`UserService`. No entra al alcance de las 12 semanas de Fase 2.
+This finding fits none of them — it is general architecture debt,
+not security or operations. It is reclassified as **general backlog**,
+a candidate for Phase 3 or for when a concrete need to touch
+`UserService` arises. It does not enter the scope of the 12 weeks of Phase 2.
 
 
 ---
 
-## Fase 2 Entry Decision (Gate de Semana 0)
+## Phase 2 Entry Decision (Week 0 Gate)
 
 ### Status
 Accepted
 
 ### Context
 
-Fase 2 no empieza porque el calendario lo diga; empieza cuando la
-base de Fase 1 deja de estar abierta. El plan de Fase 2 exige
-verificar, con evidencia y no con sensación, que los criterios de
-entrada obligatorios se cumplen antes de arrancar el trabajo de
-hardening.
+Phase 2 does not start because the calendar says so; it starts when the
+Phase 1 base stops being open. The Phase 2 plan requires verifying,
+with evidence and not with a feeling, that the mandatory entry
+criteria are met before starting the hardening work.
 
-### Verification performed (Semana 0)
+### Verification performed (Week 0)
 
 - `mvn verify`: 140 unit tests + 21 integration tests, `BUILD SUCCESS`
-  confirmado en fresco (no reusando evidencia de días anteriores).
-- Último run de GitHub Actions en `dev`: verde (8+ corridas
-  consecutivas en verde).
-- Búsqueda explícita de las 5 señales de "Fase 1 no cerrada" listadas
-  en el plan de Fase 2 — ninguna encontrada:
-  - Sin `WebSecurityConfigurerAdapter`.
-  - Sin `antMatchers`.
-  - Sin `@CrossOrigin("*")`.
-  - `permitAll()` existente es allowlist explícita
-    (`/api/auth/**`, swagger, `/error`), no amplia.
-  - Secrets externalizados en `application-prod.properties`
-    (`${JWT_SECRET}`, `${CORS_ALLOWED_ORIGINS}`, datasource por
-    variables), `ddl-auto=validate` confirmado.
+  confirmed fresh (not reusing evidence from earlier days).
+- Last GitHub Actions run on `dev`: green (8+ consecutive
+  green runs).
+- Explicit search for the 5 "Phase 1 not closed" signals listed
+  in the Phase 2 plan — none found:
+  - No `WebSecurityConfigurerAdapter`.
+  - No `antMatchers`.
+  - No `@CrossOrigin("*")`.
+  - The existing `permitAll()` is an explicit allowlist
+    (`/api/auth/**`, swagger, `/error`), not a broad one.
+  - Secrets externalized in `application-prod.properties`
+    (`${JWT_SECRET}`, `${CORS_ALLOWED_ORIGINS}`, datasource through
+    variables), `ddl-auto=validate` confirmed.
 
 ### Allowed carry-over inventory
 
-Revisados los 2 candidatos a deuda de Fase 2, evaluados contra las 5
-categorías que el gate permite (auth, OWASP, observabilidad, rate
+Reviewed the 2 candidates for Phase 2 debt, evaluated against the 5
+categories the gate allows (auth, OWASP, observability, rate
 limiting, runbooks):
 
-- **Entra a Fase 2:** auditoría exhaustiva de OpenAPI/Swagger
-  (categoría auth — corresponde a la sección 1.3 del plan de Fase 2).
-- **No entra a Fase 2:** ADR-012 (acoplamiento `UserService`/DTOs de
-  api) — no encaja en ninguna categoría del gate. Reclasificado como
-  backlog general / candidato a Fase 3 (ver actualización en
+- **Enters Phase 2:** exhaustive audit of OpenAPI/Swagger
+  (auth category — corresponds to section 1.3 of the Phase 2 plan).
+- **Does not enter Phase 2:** ADR-012 (`UserService`/api DTO
+  coupling) — it fits no gate category. Reclassified as
+  general backlog / candidate for Phase 3 (see the update in
   ADR-012).
 
 ### Frozen validation baseline
 
-El criterio único de "verde" para toda la Fase 2 queda documentado en
-`docs/testing.md`, sección "Fase 2 Validation Baseline": `mvn verify`
-como gate automatizado obligatorio, más el smoke test manual de 10
-pasos para PRs que toquen seguridad, validación, observabilidad,
-auth, import/export o logging.
+The single "green" criterion for all of Phase 2 is documented in
+`docs/testing.md`, section "Fase 2 Validation Baseline": `mvn verify`
+as the mandatory automated gate, plus the manual 10-step smoke test
+for PRs that touch security, validation, observability,
+auth, import/export or logging.
 
 ### Decision
 
-El gate de entrada a Fase 2 pasa. Fase 1 está cerrada con evidencia
-verificada hoy, no arrastrada de la retrospectiva anterior. Fase 2
-arranca en la Semana 1 (hardening de autorización) sobre esta base.
+The Phase 2 entry gate passes. Phase 1 is closed with evidence
+verified today, not carried over from the earlier retrospective. Phase 2
+starts in Week 1 (authorization hardening) on this base.
 
 ### Consequences
 
 #### Positive
-- Fase 2 arranca sin deuda crítica de Fase 1 disfrazada de trabajo
-  nuevo.
-- Existe un único criterio de validación, usable igual en local y en
-  CI, sin ambigüedad sobre qué significa "pasa".
+- Phase 2 starts without critical Phase 1 debt disguised as new
+  work.
+- There is a single validation criterion, usable the same way locally and in
+  CI, with no ambiguity about what "passes" means.
 
 #### Negative
-- Ninguna identificada — el gate pasó limpio en la primera revisión.
+- None identified — the gate passed cleanly on the first review.
 
 
 ---
@@ -627,7 +626,7 @@ Accepted
 
 ### Context
 
-Weeks 1-3 of Fase 2 required picking one consistent policy for
+Weeks 1-3 of Phase 2 required picking one consistent policy for
 accessing another user's resource: `403 Forbidden` (resource exists,
 you can't touch it) or `404 Not Found` (resource "doesn't exist" from
 your perspective) — and applying it uniformly, since mixing both
@@ -680,7 +679,7 @@ Accepted
 
 ### Context
 
-An audit of the JWT/refresh token lifecycle (week 4-6 of Fase 2,
+An audit of the JWT/refresh token lifecycle (week 4-6 of Phase 2,
 `docs/security/jwt-refresh-token-audit.md`) found a critical bug: a
 second login for the same user, without a prior logout, crashed with
 a 500 due to `createRefreshToken()` always inserting a new row
@@ -731,13 +730,13 @@ Accepted
 
 ### Context
 
-Fase 2's week 4-6 plan required confirming CORS has an explicit,
+Phase 2's week 4-6 plan required confirming CORS has an explicit,
 minimal configuration per profile, and that no wildcard origin is
 combined with credentials — a common CORS misconfiguration.
 
 ### Decision
 
-CORS is centralized in `CorsConfig`/`CorsProperties` (since Fase 1),
+CORS is centralized in `CorsConfig`/`CorsProperties` (since Phase 1),
 reading `cors.allowed-origins` per profile:
 - `dev`: `http://localhost:3000` (the local frontend dev server).
 - `prod`: `${CORS_ALLOWED_ORIGINS}`, externalized via environment
@@ -754,9 +753,9 @@ wildcard-plus-credentials combination cannot occur.
 ### Consequences
 
 #### Positive
-- Confirmed no code change was needed — the Fase 1 centralization
+- Confirmed no code change was needed — the Phase 1 centralization
   work (ADR-009) already resulted in a safe, per-profile CORS setup.
-- Explicit documentation closes out this item of the Fase 2 plan
+- Explicit documentation closes out this item of the Phase 2 plan
   with evidence, not assumption.
 
 #### Negative
@@ -772,9 +771,9 @@ Accepted
 
 ### Context
 
-Fase 1 (#137) fixed a path traversal vulnerability in export by
+Phase 1 (#137) fixed a path traversal vulnerability in export by
 sanitizing the client-supplied `fileName` before using it to build a
-filesystem path. Fase 2's stricter OWASP standard for week 4-6 goes
+filesystem path. Phase 2's stricter OWASP standard for week 4-6 goes
 further: the server should never use any client-supplied value to
 construct a filesystem path, sanitized or not.
 
@@ -865,154 +864,153 @@ to move to a shared store to remain effective.
 - Not effective across multiple app instances without a shared store
   — noted as a known limitation, not a current requirement.
 
-### Update (Fase 3, Semana 0)
+### Update (Phase 3, Week 0)
 
-Detrás de un balanceador de carga, todas las peticiones llegan con la
-dirección del balanceador y no con la del cliente, así que el límite
-por IP trataría a todos los usuarios como uno solo y dejaría de
-proteger sin dar ninguna señal. La política de `X-Forwarded-For` queda
-como deuda de Fase 3 (tarea 5.5 del plan). Además, con varias
-instancias cada una lleva su propio contador, como ya indicaba la
-sección de consecuencias.
+Behind a load balancer, every request arrives with the balancer's address
+instead of the client's, so the per-IP limit would treat all users as a
+single one and would stop protecting without giving any signal. The
+`X-Forwarded-For` policy remains as Phase 3 debt (task 5.5 of the plan).
+Also, with several instances each one keeps its own counter, as the
+consequences section already stated.
 
 ---
 
-## ADR-019: Cierre de Fase 2 y Handoff a Fase 3
+## ADR-019: Phase 2 Closure and Handoff to Phase 3
 
 ### Status
 Accepted
 
 ### Context
 
-Fase 2 (12 semanas: gate de entrada + hardening de autorización + JWT/CORS/OWASP + observabilidad/rate limiting/calidad + runbooks/post-mortem) requiere una decisión explícita de cierre, con evidencia verificada — no solo la sensación de "ya está", igual que se hizo al cerrar Fase 1.
+Phase 2 (12 weeks: entry gate + authorization hardening + JWT/CORS/OWASP + observability/rate limiting/quality + runbooks/post-mortem) requires an explicit closure decision, backed by verified evidence — not just the feeling that "it's done", just as was done when closing Phase 1.
 
-### Verification performed (Semana 12)
+### Verification performed (Week 12)
 
-Los 10 ítems de la checklist de cierre fueron verificados con evidencia fresca, no de memoria:
+The 10 items of the closure checklist were verified with fresh evidence, not from memory:
 
-- `mvn verify`: `BUILD SUCCESS` confirmado hoy (145+ unit tests, 35+ integration tests).
-- Autorización: `git log` sobre `WebSecurityConfig.java` confirma que el último cambio es el de rate limiting (semana 7-9) — la matriz de autorización sigue vigente, sin drift.
-- OWASP import/export: `git log` sobre `ReferenceController.java` confirma que el fix de nombres server-generated (semana 4-6) no fue pisado por cambios posteriores.
-- CORS: confirmado `http://localhost:3000` (dev) y `${CORS_ALLOWED_ORIGINS}` (prod) sin cambios, sin wildcard en ningún perfil.
-- Logs estructurados: confirmado JSON con `correlationId` al levantar el servidor.
-- Rate limiting: `RateLimitIntegrationTest` pasando, `429` confirmado en vivo en la semana 7-9.
-- Baseline de carga: `docs/performance/load-baseline.md` existe con resultados reales de 2 escenarios.
-- Runbooks: los 3 (`auth-401-403.md`, `refresh-token-failed.md`, `import-export-rejected.md`) existen en `docs/runbooks/`, verificados contra comportamiento real en vivo durante las semanas 10-11.
+- `mvn verify`: `BUILD SUCCESS` confirmed today (145+ unit tests, 35+ integration tests).
+- Authorization: `git log` on `WebSecurityConfig.java` confirms the last change is the rate limiting one (week 7-9) — the authorization matrix is still valid, with no drift.
+- OWASP import/export: `git log` on `ReferenceController.java` confirms the server-generated file name fix (week 4-6) was not overwritten by later changes.
+- CORS: confirmed `http://localhost:3000` (dev) and `${CORS_ALLOWED_ORIGINS}` (prod) unchanged, with no wildcard in any profile.
+- Structured logs: confirmed JSON with `correlationId` when starting the server.
+- Rate limiting: `RateLimitIntegrationTest` passing, `429` confirmed live in week 7-9.
+- Load baseline: `docs/performance/load-baseline.md` exists with real results for 2 scenarios.
+- Runbooks: all 3 (`auth-401-403.md`, `refresh-token-failed.md`, `import-export-rejected.md`) exist in `docs/runbooks/`, verified against real behavior live during weeks 10-11.
 
-### Security findings resolved during Fase 2
+### Security findings resolved during Phase 2
 
-4 hallazgos de seguridad reales se encontraron y corrigieron durante esta fase, ninguno quedó pospuesto:
+4 real security findings were found and fixed during this phase; none was postponed:
 
-1. Doble login crasheando con 500 (semana 4-6) — corregido con upsert + rotación de refresh token.
-2. JWT completo logueado en texto plano (semana 7-9) — corregido, ahora solo 8 caracteres a nivel debug.
-3. Path traversal en export (profundizado en semana 4-6, sobre el fix base de Fase 1 #137) — nombres de archivo 100% generados por el servidor.
-4. `AUDITOR` bloqueado incorrectamente y `logout` sin autenticación real (semana 1-3) — ambos corregidos.
+1. Double login crashing with a 500 (week 4-6) — fixed with upsert + refresh token rotation.
+2. Full JWT logged in plain text (week 7-9) — fixed; now only 8 characters at debug level.
+3. Path traversal in export (deepened in week 4-6, on top of the Phase 1 base fix #137) — file names are 100% server-generated.
+4. `AUDITOR` incorrectly blocked and `logout` without real authentication (week 1-3) — both fixed.
 
 ### Known debt carried forward (not a security vulnerability)
 
-- **ADR-012**: `UserService` acepta DTOs de la capa `api` directamente, violando el límite de capas que respetan `ReferenceService`/`RoleService`. Evaluado explícitamente en la semana 0 de Fase 2 contra las 5 categorías del gate (auth, OWASP, observabilidad, rate limiting, runbooks) — no encaja en ninguna. Es deuda de arquitectura general, no de seguridad ni operación. Queda como candidato a Fase 3, o a cuando surja necesidad concreta de tocar `UserService`.
+- **ADR-012**: `UserService` accepts DTOs from the `api` layer directly, violating the layer boundary that `ReferenceService`/`RoleService` respect. Explicitly evaluated in week 0 of Phase 2 against the gate's 5 categories (auth, OWASP, observability, rate limiting, runbooks) — it fits none of them. It is general architecture debt, not security or operations. It remains a candidate for Phase 3, or for when a concrete need to touch `UserService` arises.
 
 ### Decision
 
-El gate de cierre de Fase 2 aprueba. Los 10 ítems de la checklist pasan con evidencia verificada. No queda ninguna vulnerabilidad crítica conocida sin fix — la única deuda pendiente (ADR-012) es arquitectura general, explícitamente fuera de alcance de Fase 2 desde su propio gate de entrada.
+The Phase 2 closure gate passes. The 10 checklist items pass with verified evidence. No known critical vulnerability remains without a fix — the only pending debt (ADR-012) is general architecture, explicitly outside the scope of Phase 2 since its own entry gate.
 
-Fase 3 puede comenzar sobre esta base.
+Phase 3 can begin on this base.
 
 ### Consequences
 
 #### Positive
-- Fase 3 arranca sin deuda de seguridad oculta o sin resolver.
-- El patrón de verificación con evidencia (no memoria) se sostuvo en las 12 semanas, incluyendo el propio cierre.
+- Phase 3 starts without hidden or unresolved security debt.
+- The pattern of verifying with evidence (not memory) held through all 12 weeks, including the closure itself.
 
 #### Negative
-- Ninguna identificada — el gate pasó limpio.
+- None identified — the gate passed cleanly.
 
 ---
 
-## ADR-020: Entrada a Fase 3 — Gate de verificación
+## ADR-020: Phase 3 Entry — Verification Gate
 
 ### Status
 Accepted
 
 ### Context
 
-Fase 3 construye infraestructura (imagen, Terraform, AWS) sobre la
-aplicación que cerró Fase 2. Desplegar sobre una base con secretos en
-el repositorio o rutas sin tests de autorización expondría esos
-problemas en lugar de resolverlos, así que antes de escribir
-infraestructura se verificó con evidencia fresca (2026-10-09 al
-2026-10-11) que la base sigue endurecida.
+Phase 3 builds infrastructure (image, Terraform, AWS) on top of the
+application that closed Phase 2. Deploying on a base with secrets in
+the repository or routes without authorization tests would expose
+those problems instead of resolving them, so before writing
+infrastructure it was verified with fresh evidence (2026-10-09 to
+2026-10-11) that the base is still hardened.
 
 ### Decision
 
-El gate de entrada se evaluó contra los cuatro criterios definidos
-para la semana 0:
+The entry gate was evaluated against the four criteria defined
+for week 0:
 
-1. **Sin riesgo de seguridad crítico abierto.** `mvn verify` en
-   `BUILD SUCCESS`: 142 tests unitarios y 36 de integración, sin
-   fallos. Los commits más recientes de `WebSecurityConfig` (rate limiting, #163)
-   y `ReferenceController` (catálogo de eventos, #162) son los de las
-   semanas 7-9 de Fase 2: no hay cambios posteriores al cierre. El fix de
-   nombres de archivo generados por el servidor (#159) sigue presente. Los 5 documentos de cierre de
-   Fase 2 existen.
-2. **Arranque solo con variables de entorno.** El `.jar` arranca con
-   el perfil `prod` recibiendo todo por variables, falla sin
-   `JWT_SECRET` y falla con un secreto de menos de 64 caracteres.
-   Lista de variables en `docs/infra/environment-variables.md`.
-3. **Lista explícita del estado en disco local.** Inventario en
-   `docs/infra/local-filesystem-inventory.md`: el único uso es el
-   archivo temporal por petición bajo `java.io.tmpdir/tempUpload`,
-   que se borra en `finally`.
-4. **Criterio único de "verde".** Definido en
-   `docs/infra/green-criterion.md` (`mvn clean verify` más smoke test
-   manual del `.jar`).
+1. **No critical security risk open.** `mvn verify` ends in
+   `BUILD SUCCESS`: 142 unit tests and 36 integration tests, with no
+   failures. The most recent commits of `WebSecurityConfig` (rate limiting, #163)
+   and `ReferenceController` (event catalog, #162) are those of
+   weeks 7-9 of Phase 2: there are no changes after the closure. The fix for
+   server-generated file names (#159) is still in place. The 5 Phase 2
+   closure documents exist.
+2. **Startup with environment variables only.** The `.jar` starts with
+   the `prod` profile receiving everything through variables, fails without
+   `JWT_SECRET` and fails with a secret shorter than 64 characters.
+   List of variables in `docs/infra/environment-variables.md`.
+3. **Explicit list of local disk state.** Inventory in
+   `docs/infra/local-filesystem-inventory.md`: the only use is the
+   per-request temporary file under `java.io.tmpdir/tempUpload`,
+   which is deleted in `finally`.
+4. **Single "green" criterion.** Defined in
+   `docs/infra/green-criterion.md` (`mvn clean verify` plus a manual
+   smoke test of the `.jar`).
 
-Hallazgos corregidos durante el gate:
+Findings fixed during the gate:
 
-- `spring-boot-maven-plugin` no tenía versión y Maven resolvió
-  `4.2.0-M2` (una versión milestone). Se fijó en `3.2.5`, igual que
-  el BOM de dependencias.
-- El runbook `import-export-rejected.md` seguía listando los eventos
-  de import/export como pendientes; se reemplazó por los cuatro
-  eventos reales y se alineó el catálogo de eventos.
+- `spring-boot-maven-plugin` had no version and Maven resolved
+  `4.2.0-M2` (a milestone version). It was pinned to `3.2.5`, the same as
+  the dependency BOM.
+- The `import-export-rejected.md` runbook still listed the import/export
+  events as pending; it was replaced with the four real
+  events and the event catalog was aligned.
 
-Corrección de línea base: el ADR-019 y la retrospectiva de Fase 2
-citan "145+ unit / 35+ integration". Los reportes reales dan **142
-unitarios y 36 de integración**; no se encontraron tests borrados, por
-lo que la cifra anterior era imprecisa. Esta entrada fija la línea
-base de Fase 3.
+Baseline correction: ADR-019 and the Phase 2 retrospective
+cite "145+ unit / 35+ integration". The actual reports give **142
+unit and 36 integration tests**; no deleted tests were found, so
+the earlier figure was imprecise. This entry sets the Phase 3
+baseline.
 
-El gate de entrada de Fase 3 aprueba. Las semanas 1-2 pueden
-comenzar.
+The Phase 3 entry gate passes. Weeks 1-2 can
+begin.
 
-### Deudas conscientes que entran a Fase 3
+### Conscious debts entering Phase 3
 
-| Deuda | Origen | Dónde se resuelve |
+| Debt | Origin | Where it is resolved |
 |---|---|---|
-| Política de `X-Forwarded-For` para el rate limiting detrás de un balanceador | Nota del plan de Fase 3 (sección 5.5); no estaba registrada en el ADR-018 | Tarea 5.5 |
-| Rate limiting en memoria, por instancia: con varias instancias, cada una cuenta por separado (limitación ya descrita en el ADR-018) | ADR-018 | Sin tarea asignada; el plan contempla despliegues con varias instancias, así que hay que decidirlo al fijar su número |
-| `tempUpload` y su dependencia de la ruta temporal local | Inventario de este gate | Tarea 3.5 |
-| Spooling implícito de Spring Boot para subidas multipart (no verificado) | Inventario de este gate | Revisar en la tarea 3.5 |
-| `/actuator/health` documentado en el README pero sin dependencia Actuator | Criterio de verde | Semanas 1-2 |
-| La CI no ejecuta `package`: no construye ni reempaqueta el `.jar` | Criterio de verde | Al ampliar la pipeline |
-| Valores literales de desarrollo: usuario y contraseña de PostgreSQL y `jwtSecret` de `dev`, `jwtSecret` de `test` | Revisión de propiedades | Aceptados; el `jwtSecret` de `dev` se verificó distinto del real |
-| Acoplamiento de `UserService` con DTOs de la capa `api` (ADR-012) | Fase 1, arrastrada de Fase 2 | Sin tarea asignada en el plan de Fase 3; sigue abierta |
-| `mvnw` existe pero no se usa en CI ni en las instrucciones | Criterio de verde | Decisión futura |
+| `X-Forwarded-For` policy for rate limiting behind a load balancer | Phase 3 plan note (section 5.5); it was not recorded in ADR-018 | Task 5.5 |
+| In-memory, per-instance rate limiting: with several instances, each one counts separately (limitation already described in ADR-018) | ADR-018 | No task assigned; the plan contemplates deployments with several instances, so it must be decided when their number is set |
+| `tempUpload` and its dependence on the local temporary path | Inventory of this gate | Task 3.5 |
+| Implicit Spring Boot spooling for multipart uploads (not verified) | Inventory of this gate | Review in task 3.5 |
+| `/actuator/health` documented in the README but without an Actuator dependency | Green criterion | Weeks 1-2 |
+| CI does not run `package`: it does not build or repackage the `.jar` | Green criterion | When the pipeline is extended |
+| Literal development values: PostgreSQL user and password and `dev` `jwtSecret`, `test` `jwtSecret` | Properties review | Accepted; the `dev` `jwtSecret` was verified to differ from the real one |
+| Coupling of `UserService` with `api` layer DTOs (ADR-012) | Phase 1, carried over from Phase 2 | No task assigned in the Phase 3 plan; still open |
+| `mvnw` exists but is not used in CI or in the instructions | Green criterion | Future decision |
 
 ### Consequences
 
 #### Positive
-- Fase 3 arranca con evidencia reciente, no con la memoria de un
-  cierre anterior.
-- Las deudas que entran quedan nombradas, con origen y destino.
-- Se corrigieron dos desfases reales (plugin sin versión, runbook
-  desactualizado) antes de que afectaran al despliegue.
+- Phase 3 starts with recent evidence, not with the memory of an
+  earlier closure.
+- The debts that enter are named, with origin and destination.
+- Two real drifts were fixed (unpinned plugin, outdated runbook)
+  before they could affect the deployment.
 
 #### Negative
-- La retrospectiva de Fase 2 y el ADR-019 conservan la cifra
-  imprecisa de tests; la corrección vive solo en este ADR.
-- Varias deudas dependen de tareas posteriores y no se cierran hasta
-  entonces.
+- The Phase 2 retrospective and ADR-019 keep the imprecise test
+  figure; the correction lives only in this ADR.
+- Several debts depend on later tasks and are not closed until
+  then.
 
 ---
 
