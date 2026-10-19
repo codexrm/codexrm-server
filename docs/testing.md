@@ -31,10 +31,14 @@ the critical suite protects.
   sanitization on export).
 - **Repository**: `UserRepositoryTest`, `ReferenceRepositoryTest`.
 - **Integration**: see [integration-testing.md](integration-testing.md)
-  — `AuthIntegrationTest`, `ReferenceFlowIntegrationTest`,
+  — `ApplicationIntegrationTest`, `AuthIntegrationTest`,
+  `ReferenceFlowIntegrationTest`,
   `ReferenceAuthorizationIntegrationTest`,
-  `ReferenceSynchronizationIntegrationTest`, `OpenApiIntegrationTest`,
-  plus Flyway migration validation on startup.
+  `ReferenceSynchronizationIntegrationTest`,
+  `ImportExportSecurityIntegrationTest`, `OpenApiIntegrationTest`,
+  `RateLimitIntegrationTest`, `BusinessEventLoggingIntegrationTest`,
+  plus Flyway migration validation on startup. `BaseIntegrationTest`
+  is the shared base class that starts the PostgreSQL Testcontainer.
 
 ## When to Run What
 
@@ -76,17 +80,29 @@ BUILD SUCCESS
 ```
 
 Any `BUILD FAILURE` on `mvn verify` before a PR should be treated as
-blocking — this is the gate referenced in the Fase 1 success criteria
+blocking — this is the gate referenced in the Phase 1 success criteria
 ("the pipeline stays green").
 
+Current baseline (Phase 3 entry, ADR-020): 142 unit tests (Surefire)
+and 36 integration tests (Failsafe).
 
-## Fase 2 Validation Baseline
+## Relationship with CI
+
+CI runs the same tests as separate steps (`mvn clean test`, then the
+Failsafe goals), but it does not run the `package` phase, so it does
+not build the `.jar`. `mvn verify` does. See
+[ci-validation.md](ci-validation.md) and
+[infra/green-criterion.md](infra/green-criterion.md).
+
+
+## Phase 2 Validation Baseline
 
 This is the single, frozen definition of "green" for every PR during
-Fase 2. Same checklist locally and in CI — no ambiguity about what
-counts as passing.
+Phase 2. Same checklist locally and in CI — no ambiguity about what
+counts as passing. Phase 3 extends it in
+[infra/green-criterion.md](infra/green-criterion.md).
 
-### Automated (CI equivalent)
+### Automated
 
 ```bash
 mvn verify
@@ -107,11 +123,11 @@ Run after `mvn verify` passes, before merging:
 3. POST /api/auth/signin with invalid credentials   → 401/403 consistent?
 4. GET  /api/references without JWT                 → 401?
 5. GET/DELETE /api/references/{id} owned by another user → 403 or 404 per documented policy?
-6. POST /api/auth/refreshtoken invalid/expired       → consistent response?
+6. POST /api/auth/refresh-token invalid/expired      → consistent response?
 7. If the PR touches rate limiting: repeat signin    → 429?
 8. If the PR touches import/export: POST with malicious filename → 400/422?
 9. If the PR touches observability: check logs       → correlation ID present, valid JSON?
-10. GET /v3/api-docs                                 → 200 OK?
+10. GET /v3/api-docs                                 → 401 without JWT in prod (ADR-013), 200 with a valid JWT?
 ```
 
 If any step fails, the PR does not merge. If the PR only touches
@@ -120,14 +136,15 @@ description and only the relevant subset of checks is run.
 
 ### 403 vs 404 policy
 
-A single policy must be picked and kept stable across equivalent
-endpoints — the problem isn't choosing one, it's mixing both without
-criteria. (Policy to be defined and documented in weeks 1-3.)
+Defined in ADR-014 (see [decision-log.md](decision-log.md)): `404 Not
+Found` when the resource does not exist, `403 Forbidden` when it
+exists but belongs to another user. The policy is applied the same way
+across references and users.
 
 
-## Fase 2 — Observability & Rate Limiting Coverage (Semanas 7-9)
+## Phase 2 — Observability & Rate Limiting Coverage (Weeks 7-9)
 
-Additional integration test coverage added during Fase 2's
+Additional integration test coverage added during Phase 2's
 observability work:
 
 - **`RateLimitIntegrationTest`**: confirms `/api/auth/signin` returns

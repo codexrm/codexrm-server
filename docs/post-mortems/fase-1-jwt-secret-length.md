@@ -1,6 +1,6 @@
 # Post-Mortem: JWT Secret Length Failures Across Environments
 
-**Phase:** Fase 1, weeks 14-17 (security hardening)
+**Phase:** Phase 1, weeks 14-17 (security hardening)
 **Severity:** Medium (blocked local startup and integration tests
 multiple times; never reached production in a broken state)
 

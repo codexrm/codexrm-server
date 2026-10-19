@@ -1,4 +1,20 @@
-# Refactor Plan (Weeks 9–13)
+# Refactor Plan (Phase 1, Weeks 9–16)
+
+## Status
+
+Historical planning document for Phase 1. Outcome, according to the Phase 1 retrospective (`docs/retrospectives/fase-1.md`) and ADR-012:
+
+| PR | Item | Outcome |
+|---|---|---|
+| 1 | GlobalExceptionHandler | Done |
+| 2 | RoleService (extract role logic) | Done |
+| 3 | DTOConverter (registry pattern) | Done |
+| 4 | Thin controllers | Done |
+| 5 | Normalize REST URLs | Done |
+| 6 | Update OpenAPI | Done (#84) |
+| 7 | Restructure packages | Postponed with explicit criteria (ADR-012) |
+
+The week numbers below are those of the original plan. The package restructuring was evaluated in week 19, not in weeks 15–16.
 
 ## Objective
 

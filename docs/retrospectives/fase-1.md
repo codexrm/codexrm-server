@@ -63,7 +63,7 @@ back to running green and stable.
   it was found that `UserService` receives `api` layer types directly
   (unlike `ReferenceService` and `RoleService`, which do respect the
   layer boundary). Fixing it involves changing method signatures, so
-  it was documented as explicit debt (ADR-013) instead of forcing it
+  it was documented as explicit debt (ADR-012) instead of forcing it
   in a documentation-only week.
 
 A similar but smaller finding — ownership logic living as a private
@@ -122,7 +122,7 @@ were documented with explicit criteria instead of being ignored or
 forced out of time — which is exactly the behavior Phase 1 aimed to
 install as a habit.
 
-The pending debt (ADR-013, exhaustive OWASP audit) is known, written
+The pending debt (ADR-012, exhaustive OWASP audit) is known, written
 down, and blocks nothing in the current functioning of the system.
 
 ## Phase 2 Preview — What's coming
@@ -131,4 +131,4 @@ down, and blocks nothing in the current functioning of the system.
 - `SecurityScheme` for JWT in Swagger UI ("Authorize" button)
 - Stricter input validation (OWASP)
 - Residual OWASP audit on import/export and other endpoints
-- Resolve the coupling
+- Resolve the UserService ↔ API DTO coupling (ADR-012)

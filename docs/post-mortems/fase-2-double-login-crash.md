@@ -1,6 +1,6 @@
 # Post-Mortem: Double Login Crashes with 500 (Refresh Token Unique Constraint)
 
-**Phase:** Fase 2, weeks 4-6 (JWT/CORS/OWASP hardening)
+**Phase:** Phase 2, weeks 4-6 (JWT/CORS/OWASP hardening)
 **Severity:** Critical — a completely normal, common user action
 crashed the application, in production behavior terms (reproduced
 against the `dev`-profile app during the audit).
