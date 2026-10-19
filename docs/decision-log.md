@@ -555,7 +555,7 @@ limiting, runbooks):
 ### Frozen validation baseline
 
 The single "green" criterion for all of Phase 2 is documented in
-`docs/testing.md`, section "Fase 2 Validation Baseline": `mvn verify`
+`docs/testing.md`, section "Phase 2 Validation Baseline": `mvn verify`
 as the mandatory automated gate, plus the manual 10-step smoke test
 for PRs that touch security, validation, observability,
 auth, import/export or logging.

@@ -1,6 +1,17 @@
 # CI Strategy for Multi-Repository Maven Architecture
 
-## Current Situation
+## Status
+
+**Implemented.** The strategy below (GitHub Packages) is in use: the parent POM, EILibrary and jRis are published as Maven artifacts, and `.github/workflows/build.yml` writes a `settings.xml` that authenticates against the three GitHub Packages repositories (server ids `github`, `github-jris` and `github-eilibrary`) with the `READ_PACKAGES_TOKEN` secret. See [ci-validation.md](ci-validation.md) for the workflow.
+
+Implementation notes:
+
+- Publishing from a local machine uses a personal access token with the `read:packages` and `write:packages` scopes.
+- Artifact IDs must be lowercase.
+
+The rest of this document is kept as the record of the original analysis.
+
+## Original Situation (before implementation)
 
 The server repository depends on artifacts that are not available during GitHub Actions execution:
 
@@ -8,7 +19,7 @@ The server repository depends on artifacts that are not available during GitHub 
 - EILibrary
 - jRis
 
-Currently these dependencies are resolved only in the local development workspace.
+At the time of the analysis, these dependencies were resolved only in the local development workspace.
 
 ---
 
@@ -124,12 +135,14 @@ This approach preserves the current multi-repository architecture while enabling
 
 ---
 
-## Future CI Implementation Path
+## CI Implementation Path (completed)
 1. Publish parent POM.
 2. Publish EILibrary.
 3. Publish jRis.
 4. Update Maven settings.xml in CI.
 5. Enable full build and integration testing in GitHub Actions.
+
+All five steps are done. CI builds, runs the unit tests and runs the Failsafe integration suite; it does not run the `package` phase.
 
 ---
 

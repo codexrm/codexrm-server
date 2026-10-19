@@ -1,5 +1,7 @@
 ## JWT / Refresh Token Lifecycle Audit
 
+> **Status:** This document records the audit as it was at the time (Phase 2, weeks 4-6). Gaps 1 and 2 were fixed in the same phase: `createRefreshToken()` now upserts and every refresh rotates the token (ADR-015). Gap 3 (expired token mapped to 404) is not addressed in ADR-015.
+
 ### Expiration
 - JWT: `codexrm.app.jwtExpirationMs` — 3,600,000 ms (1 hour), the same
   in dev/test/prod.

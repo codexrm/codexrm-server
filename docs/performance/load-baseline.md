@@ -52,7 +52,7 @@ baseline explicitly seeds data first).
 
 ## Baseline date
 
-2026-08-29, against the Fase 2 weeks 7-9 state (structured logging,
+2026-08-29, against the Phase 2 weeks 7-9 state (structured logging,
 correlationId, business event catalog, and rate limiting all active).
 
 ## Notes for future comparison
@@ -65,4 +65,4 @@ correlationId, business event catalog, and rate limiting all active).
   investigate.
 - This baseline does not cover import/export, sync, or admin
   endpoints — scope was deliberately kept to 2 scenarios per the
-  Fase 2 plan.
+  Phase 2 plan.
