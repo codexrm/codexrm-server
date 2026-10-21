@@ -375,7 +375,7 @@ public class ReferenceAuthorizationIntegrationTest extends BaseIntegrationTest {
     }
 
 
-    // ROL VÁLIDO PERO PERMISO INSUFICIENTE → 403
+    // VALID ROLE BUT INSUFFICIENT PERMISSION → 403
     @Test
     void regularUserShouldBeForbiddenFromCreatingUsers() throws Exception {
 
@@ -407,7 +407,7 @@ public class ReferenceAuthorizationIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
-    // MANAGER puede ver referencias de todos los usuarios
+    // MANAGER can view references of all users
     @Test
     void managerShouldSeeAllUsersReferences() throws Exception {
 
@@ -428,7 +428,7 @@ public class ReferenceAuthorizationIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
-    // USER regular NO puede acceder a all-users (solo MANAGER)
+    // A regular USER can NOT access all-users (MANAGER only)
     @Test
     void regularUserShouldBeForbiddenFromAllUsersReferences() throws Exception {
 
@@ -446,7 +446,7 @@ public class ReferenceAuthorizationIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
     }
 
-    // AUDITOR puede ver el perfil de cualquier usuario
+    // AUDITOR can view the profile of any user
     @Test
     void auditorShouldSeeAnyUserProfile() throws Exception {
 
@@ -476,7 +476,7 @@ public class ReferenceAuthorizationIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
-    // EXPORT filtra silenciosamente IDs de referencias ajenas
+    // EXPORT silently filters out IDs of references owned by others
     @Test
     void exportShouldSilentlyFilterOutOthersReferences() throws Exception {
 

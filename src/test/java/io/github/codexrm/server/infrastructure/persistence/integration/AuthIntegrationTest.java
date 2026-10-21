@@ -168,7 +168,7 @@ public class AuthIntegrationTest extends BaseIntegrationTest{
 
         String token = loginResponse.getBody().getToken();
 
-        // request con JWT
+        // request with JWT
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
 
@@ -186,7 +186,7 @@ public class AuthIntegrationTest extends BaseIntegrationTest{
                 .isEqualTo(HttpStatus.OK);
     }
 
-    // Doble login: el segundo signin del mismo usuario no debe romper con 500
+    // Double login: the second signin of the same user must not fail with a 500
     @Test
     void shouldAllowDoubleLoginWithoutServerError() {
 
@@ -220,7 +220,7 @@ public class AuthIntegrationTest extends BaseIntegrationTest{
         assertThat(secondRefreshToken).isNotEqualTo(firstRefreshToken);
     }
 
-    // Rotación: usar el refresh token devuelve uno nuevo, distinto al usado
+    // Rotation: using the refresh token returns a new one, different from the one used
     @Test
     void shouldRotateRefreshTokenOnUse() throws Exception {
 
@@ -261,7 +261,7 @@ public class AuthIntegrationTest extends BaseIntegrationTest{
         assertThat(rotatedRefreshToken).isNotEqualTo(originalRefreshToken);
     }
 
-    // El refresh token viejo, ya rotado, no debe volver a funcionar
+    // The old, already rotated refresh token must not work again
     @Test
     void shouldRejectOldRefreshTokenAfterRotation() {
 
