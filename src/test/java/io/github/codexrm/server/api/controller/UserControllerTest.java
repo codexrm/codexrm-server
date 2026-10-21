@@ -133,7 +133,7 @@ class UserControllerTest {
                 .andExpect(status().isOk());
     }
 
-    // GET BY ID (AUDITOR puede ver cualquier usuario)
+    // GET BY ID (AUDITOR can view any user)
     @Test
     void shouldGetUserByIdAsAuditor() throws Exception {
         User user = new User();
@@ -147,7 +147,7 @@ class UserControllerTest {
                 .andExpect(status().isOk());
     }
 
-    // GET BY ID (USER normal NO puede ver a otro usuario)
+    // GET BY ID (a regular USER can NOT view another user)
     @Test
     void shouldForbidUserFromGettingAnotherUsersById() throws Exception {
         mockMvc.perform(get("/api/users/999")

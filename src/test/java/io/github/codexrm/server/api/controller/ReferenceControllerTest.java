@@ -68,7 +68,7 @@ class ReferenceControllerTest {
     private ObjectMapper objectMapper;
 
     // USERS
-    // Mock de usuario autenticado (ROLE_USER)
+    // Mock of the authenticated user (ROLE_USER)
     private UserDetailsImpl mockUser() {
         return new UserDetailsImpl(
                 1,
@@ -82,7 +82,7 @@ class ReferenceControllerTest {
         );
     }
 
-    // Mock de entidad User
+    // Mock of the User entity
     private User mockUserEntity() {
         User user = new User();
         user.setId(1);
@@ -90,7 +90,7 @@ class ReferenceControllerTest {
     }
 
     //GET ALL
-    //  Debe retornar lista paginada de referencias (200)
+    // Should return a paginated list of references (200)
     @Test
     void shouldGetAllReferences() throws Exception {
 
@@ -112,7 +112,7 @@ class ReferenceControllerTest {
     }
 
     //GET BY ID
-    // Debe retornar una referencia por ID (200)
+    // Should return a reference by ID (200)
     @Test
     void shouldGetReferenceById() throws Exception {
 
@@ -132,7 +132,7 @@ class ReferenceControllerTest {
     }
 
     // CREATE
-    // Debe crear una referencia correctamente (201)
+    // Should create a reference successfully (201)
     @Test
     void shouldCreateReference() throws Exception {
 
@@ -153,7 +153,7 @@ class ReferenceControllerTest {
     }
 
     //DELETE
-    // Debe eliminar una referencia por ID (200)
+    // Should delete a reference by ID (200)
     @Test
     void shouldDeleteReference() throws Exception {
 
@@ -173,7 +173,7 @@ class ReferenceControllerTest {
     }
 
     //DELETE GROUP
-    // Debe eliminar múltiples referencias (200)
+    // Should delete multiple references (200)
     @Test
     void shouldDeleteGroupReferences() throws Exception {
 
@@ -196,7 +196,7 @@ class ReferenceControllerTest {
     }
 
     // SYNC
-    // Debe sincronizar referencias correctamente (200)
+    // Should synchronize references successfully (200)
     @Test
     void shouldSyncReferences() throws Exception {
 
@@ -227,7 +227,7 @@ class ReferenceControllerTest {
                 .andExpect(status().isOk());
     }
 
-    // Debe retornar 204 cuando no hay contenido tras sync
+    // Should return 204 when there is no content after sync
     @Test
     void shouldReturnNoContentAfterSync() throws Exception {
 
@@ -254,7 +254,7 @@ class ReferenceControllerTest {
     }
 
     // IMPORT
-    //  Debe importar referencias desde archivo (200)
+    // Should import references from a file (200)
     @Test
     void shouldImportReferences() throws Exception {
 
@@ -279,7 +279,7 @@ class ReferenceControllerTest {
                 .andExpect(status().isOk());
     }
 
-    // Debe fallar si el archivo está vacío (400)
+    // Should fail if the file is empty (400)
     @Test
     void shouldFailImportWhenFileIsEmpty() throws Exception {
 
@@ -298,7 +298,7 @@ class ReferenceControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // Debe fallar si el formato no está soportado (400)
+    // Should fail if the format is not supported (400)
     @Test
     void shouldFailImportWhenFormatIsUnsupported() throws Exception {
 
@@ -317,7 +317,7 @@ class ReferenceControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // Debe fallar si la extensión del archivo no está permitida (400)
+    // Should fail if the file extension is not allowed (400)
     @Test
     void shouldFailImportWhenExtensionIsUnsupported() throws Exception {
 
@@ -337,7 +337,7 @@ class ReferenceControllerTest {
     }
 
     // EXPORT
-    // Debe exportar referencias correctamente (200)
+    // Should export references successfully (200)
     @Test
     void shouldExportReferences() throws Exception {
 
@@ -366,7 +366,7 @@ class ReferenceControllerTest {
                 .andExpect(status().isOk());
     }
 
-    // Debe sanitizar el fileName y evitar path traversal (200, sin escribir fuera de la carpeta temporal)
+    // Should sanitize the fileName and avoid path traversal (200, without writing outside the temporary folder)
     @Test
     void shouldSanitizeFileNameOnExport() throws Exception {
 
@@ -397,7 +397,7 @@ class ReferenceControllerTest {
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(".."))));
     }
     //ALL USERS
-    //  Debe permitir acceso a MANAGER (200)
+    // Should allow access to MANAGER (200)
     @Test
     void shouldGetAllFromUsersAsManager() throws Exception {
 
@@ -415,7 +415,7 @@ class ReferenceControllerTest {
     }
 
     // SECURITY
-    // Debe retornar 401 si no está autenticado
+    // Should return 401 if not authenticated
     @Test
     void shouldReturnUnauthorizedWhenNoAuth() throws Exception {
 

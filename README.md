@@ -319,14 +319,14 @@ Postman will automatically generate a collection with all endpoints.
 Before opening a PR, especially for changes touching API, security,
 or configuration:
 
-1. Levantar dependencias necesarias (`docker compose up db`, o el
-   stack completo con `docker compose up --build`).
-2. Ejecutar tests unitarios (`mvn test`).
-3. Ejecutar tests de integración críticos (`mvn verify`, o
-   `mvn test -Dtest="*IntegrationTest"` para correr solo integración).
-   Ver [docs/testing.md](docs/testing.md) para el detalle de qué
-   cubre la suite crítica.
-4. Verificar Swagger UI si el cambio toca API, seguridad o configuración
+1. Start the required dependencies (`docker compose up db`, or the
+   full stack with `docker compose up --build`).
+2. Run the unit tests (`mvn test`).
+3. Run the critical integration tests (`mvn verify`, or
+   `mvn test -Dtest="*IntegrationTest"` to run only the integration tests).
+   See [docs/testing.md](docs/testing.md) for details on what the
+   critical suite covers.
+4. Check Swagger UI if the change touches the API, security or configuration
    (`http://localhost:8081/swagger-ui.html`).
 
 ---

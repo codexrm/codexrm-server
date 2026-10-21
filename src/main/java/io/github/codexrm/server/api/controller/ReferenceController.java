@@ -175,7 +175,7 @@ public class ReferenceController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<?> delete(
-            @Parameter(description = "ID de la referencia", required = true)
+            @Parameter(description = "ID of the reference", required = true)
             @PathVariable("id") Integer id) {
 
         User user = getAuthenticatedUser();
