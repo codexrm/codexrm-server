@@ -68,6 +68,7 @@ Documentation of `codexrm-server`. All documents are written in English
 | [code-reading/modelmapper.md](code-reading/modelmapper.md) | Inheritance and polymorphic mapping with ModelMapper (ADR-007) |
 | [code-reading/springdoc-openapi.md](code-reading/springdoc-openapi.md) | springdoc-openapi configuration and DTO inheritance (ADR-008) |
 | [code-reading/spring-data-jpa.md](code-reading/spring-data-jpa.md) | Spring Data JPA repositories and query derivation |
+| [code-reading/dockerfile-and-pipeline.md](code-reading/dockerfile-and-pipeline.md) | Multi-stage Dockerfile, layer cache, non-root runtime and CI/CD workflows of hapi-fhir-jpaserver-starter |
 
 ## Conventions
 
