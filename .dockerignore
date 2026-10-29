@@ -1,0 +1,12 @@
+.git
+.github
+.idea
+.claude
+.mvn
+target
+docs
+scripts
+*.md
+*.txt
+*.iml
+.env*

@@ -1051,3 +1051,98 @@ messages) is not rewritten.
 - The repository is bilingual until the milestone is finished.
 - Translation effort, and the risk of changing the meaning of past
   decisions; mitigated by translating without altering facts.
+
+---
+
+## ADR-022: Container Image Build Strategy
+
+### Status
+Accepted
+
+### Context
+
+The Dockerfile inherited from earlier phases was written for a
+multi-module layout: it built from the parent folder with
+`mvn -pl codexrm-server -am` and copied the jar from
+`/app/codexrm-server/target/`. `codexrm-server` is now an independent
+repository and a single Maven module (`server-0.0.1-SNAPSHOT`).
+
+Checked on 2026-10-29: with this repository as build context, the old
+Dockerfile failed at the Maven step (non-resolvable parent POM, 401
+Unauthorized from GitHub Packages). It also copied the whole project
+before resolving dependencies (no layer cache), had no
+`.dockerignore`, and used the full JDK image with a moving tag in the
+runtime stage.
+
+### Decision
+
+1. **Build context is this repository only.** The build runs
+   `mvn clean package -DskipTests` as a single module and copies
+   `/app/target/server-0.0.1-SNAPSHOT.jar`.
+2. **Parent POM and internal dependencies come from GitHub Packages.**
+   The parent (`io.github.codexrm:codexrm:1.0.0`) declares
+   `<relativePath>../pom.xml</relativePath>`, which does not exist
+   inside the repository or the build context, so Maven resolves it,
+   EILibrary and jRis from GitHub Packages, as CI does. The local
+   aggregator POM and the published `codexrm-parent` POM define the same
+   dependency management (Spring Boot 3.2.5 BOM) and differ only in
+   modules, name, description and `distributionManagement`. Not
+   verified: that the published `1.0.0` is identical to the current
+   `codexrm-parent` POM.
+3. **Credentials are a BuildKit secret.** A Maven `settings.xml` (server
+   ids `github`, `github-jris`, `github-eilibrary`) is mounted at
+   `/root/.m2/settings.xml` only during the Maven steps. It is not
+   stored in any layer: `docker history` shows no credentials.
+4. **Layer order:** `pom.xml`, then `dependency:go-offline`, then
+   `src/`, then `package`. A code-only change reuses the dependency
+   layer.
+5. **Two stages.** Build on a Maven + JDK image; runtime on a JRE-only
+   image, with only the jar copied. No Maven, JDK or sources reach the
+   final image.
+6. **Pinned versions, by tag and digest:**
+   `maven:3.9.12-eclipse-temurin-21@sha256:c3c9d3ac...` and
+   `eclipse-temurin:21.0.12.1_1-jre@sha256:f3795601...`.
+7. **`.dockerignore`** excludes `.git`, `.github`, `.idea`, `.claude`,
+   `.mvn`, `target`, `docs`, `scripts`, `*.md`, `*.txt`, `*.iml` and
+   `.env*`.
+8. **Maven in the build image, not `mvnw`.** The image is pinned, and CI
+   also calls `mvn` directly. `mvnw` and `.mvn/` stay in the repository
+   unused. This settles the `mvnw` debt recorded in ADR-020.
+
+Out of scope here: non-root user, health check, JVM memory options and
+Actuator (separate issues).
+
+#### Measurements (2026-10-29, Docker Desktop, Java 21.0.12.1)
+
+| Case | Result |
+|---|---|
+| Final image | 581 MB on disk, 175 MB compressed |
+| Old Dockerfile final image | Could not be built; estimated about 794 MB (JDK image 728 MB + jar 66 MB) |
+| Cold build | 602 s (dependency layer 560 s, package 38 s) |
+| Source change | 42 s (dependency layer reused) |
+| No change | 2 s (all layers cached) |
+
+The container starts with the `prod` profile in 5.13 s and answers `401`
+on `/` (authentication required). The final image contains only
+`app.jar`: no `javac`, no `mvn`.
+
+### Consequences
+
+#### Positive
+- The image builds from the repository alone and resolves dependencies
+  the same way CI does.
+- Rebuilds after a code change take seconds instead of minutes.
+- The final image has no JDK, sources or credentials, and is about 27%
+  smaller than the old design would have been (estimated).
+- Pinned base images make builds reproducible.
+
+#### Negative
+- A cold build takes about 10 minutes. Locally, Maven also tries a Flyway
+  repository whose host no longer resolves (`nexus.flywaydb.org`); its
+  effect on the Docker build time was not measured.
+- Builds need a GitHub token with `read:packages`. The token expires and
+  must be renewed.
+- Digest pins do not update themselves; base images must be bumped by
+  hand.
+- Until the hardening issues are done, the image still runs as root and
+  has no health check.
