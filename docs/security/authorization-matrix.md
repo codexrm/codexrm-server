@@ -23,6 +23,7 @@ against `WebSecurityConfig`'s `authorizeHttpRequests`.
 | POST | `/api/auth/signin` | |
 | POST | `/api/auth/refresh-token` | |
 | GET | `/swagger-ui.html`, `/v3/api-docs/**` | Public only in `dev`/`test` — requires JWT in `prod` (ADR-013) |
+| GET | `/actuator/health` | Public in every profile, including `prod` (ADR-023). Returns only the status, no component details. No other Actuator endpoint is exposed |
 
 ## Authenticated, no specific role (any logged-in user)
 

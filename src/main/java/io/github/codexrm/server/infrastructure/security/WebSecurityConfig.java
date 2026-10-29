@@ -98,6 +98,7 @@ public class WebSecurityConfig {
                       "/api/auth/signup",
                       "/api/auth/signin",
                       "/api/auth/refresh-token",
+                      "/actuator/health",
                       "/error"
               ).permitAll();
 

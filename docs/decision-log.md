@@ -1146,3 +1146,75 @@ on `/` (authentication required). The final image contains only
   hand.
 - Until the hardening issues are done, the image still runs as root and
   has no health check.
+
+---
+
+## ADR-023: Health Endpoint for Container Probes
+
+### Status
+Accepted
+
+### Context
+
+The README documented `/actuator/health` (on port 8081), but the project
+had no Actuator dependency, so the endpoint did not exist. This was
+recorded as a debt in ADR-020. Phase 3 needs a probe for the load
+balancer, the orchestrator and the image `HEALTHCHECK`. Other Actuator
+endpoints publish configuration, environment, beans and heap dumps, so
+exposing the module without limits would widen the public surface.
+
+### Decision
+
+1. Add `spring-boot-starter-actuator` (the version is managed by the
+   Spring Boot BOM).
+2. Expose only `health`, on the application port (8080). Two settings
+   keep the surface small: all endpoints are disabled by default and
+   only `health` is enabled, and web exposure is limited to `health`.
+   The `/actuator` discovery page is disabled.
+3. `management.endpoint.health.show-details=never`: anonymous callers
+   see only the status (`UP` or `DOWN`), with no components.
+4. `/actuator/health` is permitted without a JWT in every profile,
+   including `prod`, by its exact path. It sits in the always-permitted
+   list with the auth endpoints, unlike Swagger, which stays closed in
+   `prod` (ADR-013). Every other path keeps requiring authentication.
+5. The settings live in the base `application.properties`, so they apply
+   to every profile.
+
+Not decided here: a separate management port (not used, to keep the
+load balancer and the application on one port) and the liveness and
+readiness sub-paths (not enabled). Not verified: the response when the
+database is unavailable. Actuator is expected to report `DOWN`; whether
+that should remove an instance from rotation must be decided before the
+load balancer health check is configured.
+
+#### Verification (2026-10-29)
+
+`ActuatorHealthIntegrationTest` was written first and failed with `401`
+before the change. After it, `/actuator/health` returns `200` with
+`{"status":"UP"}` without a JWT and without `components` or `details`,
+and `/actuator`, `/actuator/env`, `/actuator/beans`, `/actuator/info`
+and `/actuator/heapdump` return `401` to anonymous callers.
+`mvn clean verify`: 142 unit tests and 42 integration tests (36 before
+plus 6 new), all passing.
+
+Finding, tracked separately in 237: an authenticated request
+to a route that does not exist returns `500` instead of `404`, because
+the catch-all handler intercepts `NoResourceFoundException`. It showed
+that the other Actuator endpoints do not exist, and is not caused by
+this change.
+
+### Consequences
+
+#### Positive
+- A probe is available for the load balancer and the image
+  `HEALTHCHECK`.
+- The Actuator surface is limited to `health`, protected by two
+  independent settings and by tests.
+- The README, the matrix and the code now agree on the endpoint.
+
+#### Negative
+- The endpoint is public and reveals that the application is up.
+- `AuthRateLimitFilter` covers only the auth endpoints, so the health
+  endpoint is not rate limited.
+- The health result depends on the database and other indicators; its
+  behavior when they fail is not tested yet.
