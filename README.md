@@ -373,8 +373,11 @@ mvn test -Dtest="*IntegrationTest"
 ## Health Check
 
 ```text
-http://localhost:8081/actuator/health
+http://localhost:8080/actuator/health
 ```
+
+Returns `{"status":"UP"}` without authentication. It is the only Actuator endpoint exposed, and it shows no component details (ADR-023).
+
 ---
 
 ## Future Improvements
