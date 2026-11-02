@@ -165,7 +165,44 @@ http://localhost:8080
 
 ---
 
+## Run the Production Image
+
+The `Dockerfile` builds the image from this repository alone. Maven
+needs a `settings.xml` with a token that can read GitHub Packages; it
+is passed as a BuildKit secret and is never copied into the image.
+
+Build, tagged with the short commit SHA:
+
+```bash
+SHA=$(git rev-parse --short HEAD)
+docker build \
+  --secret id=maven_settings,src=$HOME/.m2/settings.xml \
+  --build-arg GIT_SHA=$SHA \
+  -t codexrm-server:$SHA .
+```
+
+Run it with the `prod` profile, next to a PostgreSQL container on the
+same Docker network. The variables are listed in
+[docs/infra/environment-variables.md](docs/infra/environment-variables.md).
+The application listens on port 8080 and runs as a non-root user.
+
+Check it:
+
+```bash
+curl http://localhost:8080/actuator/health
+```
+
+The step-by-step smoke test is in
+[docs/infra/green-criterion.md](docs/infra/green-criterion.md), and
+the decisions behind the image are in ADR-022, ADR-023 and ADR-024.
+
+---
+
 ## Run with Docker Compose
+
+> The `docker-compose.yml` used for local development is not part of
+> this repository: it lives in the workspace folder that contains
+> `codexrm-server`. Run the `docker compose` commands from that folder.
 
 ### Build the project
 
@@ -319,8 +356,7 @@ Postman will automatically generate a collection with all endpoints.
 Before opening a PR, especially for changes touching API, security,
 or configuration:
 
-1. Start the required dependencies (`docker compose up db`, or the
-   full stack with `docker compose up --build`).
+1. Start the required dependencies (docker compose up db, run from the folder that holds docker-compose.yml).
 2. Run the unit tests (`mvn test`).
 3. Run the critical integration tests (`mvn verify`, or
    `mvn test -Dtest="*IntegrationTest"` to run only the integration tests).
@@ -349,6 +385,12 @@ Run Spring Boot locally:
 
 ```bash
 mvn spring-boot:run
+```
+
+Build the production image (see [Run the Production Image](#run-the-production-image)):
+
+```bash
+docker build --secret id=maven_settings,src=$HOME/.m2/settings.xml -t codexrm-server:local .
 ```
 
 Start Docker services:

@@ -997,6 +997,14 @@ begin.
 | Coupling of `UserService` with `api` layer DTOs (ADR-012) | Phase 1, carried over from Phase 2 | No task assigned in the Phase 3 plan; still open |
 | `mvnw` exists but is not used in CI or in the instructions | Green criterion | Future decision |
 
+### Update (2026-11-02, end of weeks 1-2)
+
+- Closed: `/actuator/health` without an Actuator dependency (ADR-023).
+- Closed: `mvnw` is not used; the image builds with the Maven image
+  (ADR-022).
+- Still open: CI does not run `package` and does not build the Docker
+  image. See `docs/infra/green-criterion.md`.
+
 ### Consequences
 
 #### Positive
