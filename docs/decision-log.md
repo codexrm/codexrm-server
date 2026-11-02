@@ -1218,3 +1218,80 @@ this change.
   endpoint is not rate limited.
 - The health result depends on the database and other indicators; its
   behavior when they fail is not tested yet.
+
+---
+
+## ADR-024: Runtime Image Hardening
+
+### Status
+Accepted
+
+### Context
+
+After ADR-022 the runtime stage ran as root, had no health check, no JVM
+memory setting and was identified only by a version tag. The image must
+be deployable without changes: no root, able to report its health, and
+identified by a tag that never changes content.
+
+### Decision
+
+1. **Non-root user.** The image creates the user `app` (UID and GID
+  10001) and runs with `USER 10001:10001`, after the steps that need
+         root. A numeric UID lets orchestrators verify the container is not
+         root.
+2. **Read-only application code.** `/app` and `app.jar` stay owned by
+   root; the application user cannot write there. The application writes
+   only under `java.io.tmpdir`, that is `/tmp` (see
+   `docs/infra/local-filesystem-inventory.md`). The root filesystem is
+   not set read-only; if that is required later, `/tmp` will need a
+   writable volume (task 3.5 of the Phase 3 plan).
+3. **Health check.** `HEALTHCHECK` calls `/actuator/health` with `curl`,
+   which is already present in the base image: interval 30 s, timeout
+   3 s, start period 40 s, 3 retries. `curl -f` makes any non-success
+   status a failure.
+4. **JVM memory** is a percentage of the container limit:
+   `-XX:MaxRAMPercentage=75.0`.
+5. **Port 8080** is confirmed: the `prod` profile defines no
+   `server.port`, the container answers on 8080 and the image exposes
+  8080. The future target group must use 8080.
+6. **Immutable tags.** The deployment tag is the commit SHA. The build
+   takes `GIT_SHA` as a build argument and stores it in the
+   `org.opencontainers.image.revision` label. `latest` is not used for
+   deployment.
+7. **No secrets in the image.** `docker history` shows no credentials or
+   Maven references, `/app` contains only `app.jar`, and `.dockerignore`
+   (ADR-022) keeps environment files and `target/` out.
+
+#### Verification (2026-11-02)
+
+| Check | Result |
+|---|---|
+| Process user | `uid=10001(app)` |
+| Writing | `/tmp` allowed, `/app` denied |
+| Image metadata | `User` 10001:10001, revision label with the commit SHA, `Healthcheck` present |
+| Container status | `healthy` about two minutes after start |
+| `/actuator/health` | `200` with `{"status":"UP"}` |
+| `/actuator/env` | `401` |
+| Database stopped | `/actuator/health` returned `503` with `{"status":"DOWN"}` |
+| Container status after the database stopped | `unhealthy` after the health check failed repeatedly |
+
+### Consequences
+
+#### Positive
+- A compromised process cannot act as root or change the application
+  code at runtime.
+- Docker can report whether the application is healthy, and a database
+  failure is visible in the health status.
+- Every image can be traced to the commit that produced it.
+
+#### Negative
+- The base image still contains `curl`, `wget` and `bash`, more tooling
+  than a distroless image.
+- The health result includes the database. With a load balancer and an
+  orchestrator that replaces unhealthy tasks, a database outage could
+  remove every instance from rotation and restart them. Before the
+  Terraform service issue, decide whether to separate liveness (restarts)
+  from readiness (traffic); Actuator can provide both groups, but they are
+  not enabled.
+- Whether the target orchestrator honors the Dockerfile `HEALTHCHECK`
+  must be checked when the service is defined.
