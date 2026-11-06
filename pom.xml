@@ -233,6 +233,15 @@
 			<id>github-eilibrary</id>
 			<url>https://maven.pkg.github.com/codexrm/EILibrary</url>
 		</repository>
+		<!-- flyway-parent 9.22.3 declares this repository, but nexus.flywaydb.org
+     no longer resolves. Redefining it with the same id and disabling it
+     stops Maven from querying it (#234). -->
+		<repository>
+			<id>flyway-repo</id>
+			<url>https://nexus.flywaydb.org/repository/flyway/</url>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>false</enabled></snapshots>
+		</repository>
 	</repositories>
 
 
