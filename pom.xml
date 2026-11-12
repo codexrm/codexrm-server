@@ -17,6 +17,7 @@
 	<properties>
 		<java.version>21</java.version>
 		<testcontainers.version>2.0.5</testcontainers.version>
+		<flyway.version>11.20.0</flyway.version>
 	</properties>
 
 	<dependencyManagement>
@@ -114,9 +115,19 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Explicit Flyway version: it overrides the Spring Boot 3.2.5 BOM (Flyway 9.22.3),
+     which has not tested PostgreSQL 16. See ADR-025 and #246.
+     Review it when Spring Boot is upgraded. -->
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-core</artifactId>
+			<version>${flyway.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+			<version>${flyway.version}</version>
 		</dependency>
 
 		<dependency>
