@@ -1303,3 +1303,72 @@ identified by a tag that never changes content.
   not enabled.
 - Whether the target orchestrator honors the Dockerfile `HEALTHCHECK`
   must be checked when the service is defined.
+
+---
+
+## ADR-025: PostgreSQL Version and Flyway Compatibility
+
+### Status
+Accepted
+
+### Context
+
+At startup, Flyway 9.22.3 (the version managed by Spring Boot 3.2.5) logs:
+`Flyway upgrade recommended: PostgreSQL 16.13 is newer than this version of Flyway and support has not been tested. The latest supported version of PostgreSQL is 15.`
+
+The PostgreSQL major version differed across places:
+
+- Local runs (`docker-compose.yml`, outside this repository) and the Testcontainers integration tests use `postgres:16` (`BaseIntegrationTest.java`).
+- The CI workflow declares a `postgres:15` service (`.github/workflows/build.yml`) that the tests do not use, because Testcontainers overrides the datasource (see `docs/ci-validation.md`).
+- Phase 3 provisions an RDS instance with Terraform, so an engine version has to be chosen.
+
+Facts checked on 2026-11-12:
+
+- The current Flyway documentation lists PostgreSQL 12 to 18 as supported.
+- Since Flyway 10, PostgreSQL support is a separate dependency, `org.flywaydb:flyway-database-postgresql`.
+- Spring Boot 3.2.5 manages Flyway 9.22.3; Spring Boot 3.3 manages Flyway 10.
+- Amazon RDS for PostgreSQL 15 has standard support until 29 February 2028; version 16, until 28 February 2029.
+
+### Options considered
+
+1. PostgreSQL 15 everywhere, inside the range that Flyway 9.22.3 tested.
+2. PostgreSQL 16 everywhere and a newer Flyway.
+3. PostgreSQL 16 with Flyway 9.22.3, accepting the warning.
+
+### Experiment
+
+Option 2 was tested on a throwaway branch (not merged): explicit versions of `flyway-core` and `flyway-database-postgresql` in `pom.xml`, with `mvn clean verify` against Testcontainers `postgres:16`:
+
+| | Flyway 9.22.3 (baseline) | 10.20.0 | 11.20.0 |
+|---|---|---|---|
+| "upgrade recommended" warnings | 10 | 0 | 0 |
+| "Unsupported Database" errors | 0 | 0 | 0 |
+| Migrations applied (log lines) | 10 | 10 | 10 |
+| Tests | 142 unit + 42 integration | same | same |
+| Result | BUILD SUCCESS | BUILD SUCCESS | BUILD SUCCESS |
+
+Not tested: the production image, CI, and a real RDS instance.
+
+### Decision
+
+Use **PostgreSQL 16 everywhere**, including the future RDS instance, and upgrade Flyway to **11.20.0**, declaring `flyway-core` and `flyway-database-postgresql` with an explicit version in `pom.xml`.
+
+Changes this requires (tracked in follow-up issues, not in this ADR):
+
+- `pom.xml`: explicit Flyway version and the PostgreSQL module.
+- `.github/workflows/build.yml`: the `postgres` service from 15 to 16, to say the same as the tests.
+- `docs/ci-validation.md`: update the sentence about the `postgres:15` service.
+- Terraform RDS issue: use PostgreSQL 16 as the engine major version.
+- Local setup and Testcontainers already use 16: no change.
+
+### Consequences
+
+#### Positive
+- The Flyway warning disappears and every environment uses one PostgreSQL major version.
+- RDS PostgreSQL 16 has standard support until February 2029.
+- The decision is backed by a test run, not only by documentation.
+
+#### Negative
+- Spring Boot 3.2.5 is designed for Flyway 9: the combination passes the tests but is not officially supported by Spring Boot.
+- Explicit Flyway versions override the Spring Boot BOM. When Spring Boot is upgraded, they must be reviewed and probably removed.
+- Flyway 11 is a new major version; the first migrations on a real RDS instance must be checked, because only two migration files were exercised.
